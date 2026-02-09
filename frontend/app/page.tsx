@@ -1,0 +1,239 @@
+'use client'
+
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { MessageBubble } from '@/components/MessageBubble'
+import { ChatInput } from '@/components/ChatInput'
+import { Header } from '@/components/Header'
+
+interface Message {
+    id: string
+    role: 'user' | 'assistant' | 'system'
+    content: string
+    timestamp: Date
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'
+
+export default function Home() {
+    const [messages, setMessages] = useState<Message[]>([])
+    const [isLoading, setIsLoading] = useState(false)
+    const [conversationId, setConversationId] = useState<string | null>(null)
+    const [streamingContent, setStreamingContent] = useState('')
+    const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected')
+    const messagesEndRef = useRef<HTMLDivElement>(null)
+    const wsRef = useRef<WebSocket | null>(null)
+
+    // Scroll to bottom on new messages
+    const scrollToBottom = useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, [])
+
+    useEffect(() => {
+        scrollToBottom()
+    }, [messages, streamingContent, scrollToBottom])
+
+    // WebSocket connection for streaming
+    const connectWebSocket = useCallback(() => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) return
+
+        setConnectionStatus('connecting')
+        const ws = new WebSocket(`${WS_URL}/api/chat/stream`)
+
+        ws.onopen = () => {
+            setConnectionStatus('connected')
+            console.log('WebSocket connected')
+        }
+
+        ws.onclose = () => {
+            setConnectionStatus('disconnected')
+            console.log('WebSocket disconnected')
+            // Attempt to reconnect after 3 seconds
+            setTimeout(() => {
+                if (wsRef.current?.readyState !== WebSocket.OPEN) {
+                    connectWebSocket()
+                }
+            }, 3000)
+        }
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error)
+            setConnectionStatus('disconnected')
+        }
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data)
+
+            if (data.error) {
+                console.error('Server error:', data.error)
+                setIsLoading(false)
+                return
+            }
+
+            if (data.content) {
+                setStreamingContent(prev => prev + data.content)
+            }
+
+            if (data.done) {
+                // Finalize the message
+                setMessages(prev => [
+                    ...prev,
+                    {
+                        id: `msg-${Date.now()}`,
+                        role: 'assistant',
+                        content: streamingContent + (data.content || ''),
+                        timestamp: new Date(),
+                    }
+                ])
+                setStreamingContent('')
+                setIsLoading(false)
+                if (data.conversation_id) {
+                    setConversationId(data.conversation_id)
+                }
+            }
+        }
+
+        wsRef.current = ws
+    }, [streamingContent])
+
+    useEffect(() => {
+        connectWebSocket()
+        return () => {
+            wsRef.current?.close()
+        }
+    }, [connectWebSocket])
+
+    const sendMessage = async (content: string) => {
+        if (!content.trim() || isLoading) return
+
+        const userMessage: Message = {
+            id: `msg-${Date.now()}`,
+            role: 'user',
+            content,
+            timestamp: new Date(),
+        }
+
+        setMessages(prev => [...prev, userMessage])
+        setIsLoading(true)
+        setStreamingContent('')
+
+        // Format messages for API
+        const apiMessages = [...messages, userMessage].map(m => ({
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp.toISOString(),
+        }))
+
+        // Use REST API for reliable responses
+        try {
+            const response = await fetch(`${API_URL}/api/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: apiMessages,
+                    conversation_id: conversationId,
+                }),
+            })
+
+            if (!response.ok) throw new Error('Failed to send message')
+
+            const data = await response.json()
+            setMessages(prev => [
+                ...prev,
+                {
+                    id: `msg-${Date.now()}`,
+                    role: 'assistant',
+                    content: data.message.content,
+                    timestamp: new Date(),
+                }
+            ])
+            setConversationId(data.conversation_id)
+        } catch (error) {
+            console.error('Error sending message:', error)
+            setMessages(prev => [
+                ...prev,
+                {
+                    id: `msg-${Date.now()}-error`,
+                    role: 'assistant',
+                    content: 'Sorry, I encountered an error. Please try again.',
+                    timestamp: new Date(),
+                }
+            ])
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const clearChat = () => {
+        setMessages([])
+        setConversationId(null)
+        setStreamingContent('')
+    }
+
+    return (
+        <main className="flex min-h-screen flex-col bg-dark-bg">
+            <Header
+                connectionStatus={connectionStatus}
+                onClearChat={clearChat}
+                messageCount={messages.length}
+            />
+
+            <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+                {/* Messages Area */}
+                <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+                    {messages.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                            <div className="w-16 h-16 mb-6 rounded-full bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center">
+                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-2xl font-bold gradient-text mb-2">Welcome to AI Chat</h2>
+                            <p className="text-dark-muted max-w-md">
+                                Start a conversation with the AI assistant. Ask questions, get help with coding, or just chat!
+                            </p>
+                        </div>
+                    )}
+
+                    {messages.map((message) => (
+                        <MessageBubble key={message.id} message={message} />
+                    ))}
+
+                    {/* Streaming message */}
+                    {streamingContent && (
+                        <MessageBubble
+                            message={{
+                                id: 'streaming',
+                                role: 'assistant',
+                                content: streamingContent,
+                                timestamp: new Date(),
+                            }}
+                            isStreaming
+                        />
+                    )}
+
+                    {/* Loading indicator */}
+                    {isLoading && !streamingContent && (
+                        <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+                                <span className="text-white text-sm font-medium">AI</span>
+                            </div>
+                            <div className="glass-card rounded-2xl p-4">
+                                <div className="typing-indicator">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input Area */}
+                <ChatInput onSend={sendMessage} isLoading={isLoading} />
+            </div>
+        </main>
+    )
+}
