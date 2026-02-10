@@ -1,7 +1,7 @@
 """Abstract base class for LLM providers."""
 
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from chatbot_ai_system.models.schemas import ChatMessage, ChatResponse, StreamChunk
 
@@ -22,6 +22,7 @@ class BaseLLMProvider(ABC):
         model: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs,
     ) -> ChatResponse:
         """Generate a completion for the given messages.
@@ -45,6 +46,7 @@ class BaseLLMProvider(ABC):
         model: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs,
     ) -> AsyncGenerator[StreamChunk, None]:
         """Stream a completion for the given messages.

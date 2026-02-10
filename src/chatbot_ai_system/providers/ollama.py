@@ -13,6 +13,8 @@ from chatbot_ai_system.models.schemas import (
     MessageRole,
     StreamChunk,
     UsageInfo,
+    ToolCall,
+    ToolCallFunction,
 )
 
 from .base import BaseLLMProvider
@@ -64,7 +66,22 @@ class OllamaProvider(BaseLLMProvider):
 
     def _format_messages(self, messages: List[ChatMessage]) -> List[dict]:
         """Format messages for Ollama API."""
-        return [{"role": msg.role.value, "content": msg.content} for msg in messages]
+        formatted = []
+        for msg in messages:
+            m = {"role": msg.role.value, "content": msg.content}
+            if msg.tool_calls:
+                m["tool_calls"] = [
+                    {
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        },
+                        "type": "function",
+                    }
+                    for tc in msg.tool_calls
+                ]
+            formatted.append(m)
+        return formatted
 
     async def complete(
         self,
@@ -72,19 +89,10 @@ class OllamaProvider(BaseLLMProvider):
         model: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        tools: Optional[List[dict]] = None,
         **kwargs,
     ) -> ChatResponse:
-        """Generate a completion using Ollama.
-
-        Args:
-            messages: List of chat messages
-            model: Model to use (default: llama2)
-            temperature: Sampling temperature
-            max_tokens: Maximum tokens to generate
-
-        Returns:
-            ChatResponse with the generated message
-        """
+        """Generate a completion using Ollama."""
         start_time = time.time()
         client = await self._get_client()
         model = model or self.default_model
@@ -101,17 +109,39 @@ class OllamaProvider(BaseLLMProvider):
         if max_tokens:
             payload["options"]["num_predict"] = max_tokens
 
+        if tools:
+            payload["tools"] = tools
+
         try:
             response = await client.post("/api/chat", json=payload)
             response.raise_for_status()
             data = response.json()
 
             latency_ms = (time.time() - start_time) * 1000
+            
+            message_data = data.get("message", {})
+            content = message_data.get("content", "")
+            tool_calls_data = message_data.get("tool_calls", [])
+            
+            tool_calls = None
+            if tool_calls_data:
+                tool_calls = []
+                for tc in tool_calls_data:
+                    function_data = tc.get("function", {})
+                    tool_calls.append(
+                        ToolCall(
+                            function=ToolCallFunction(
+                                name=function_data.get("name"),
+                                arguments=function_data.get("arguments", {}),
+                            )
+                        )
+                    )
 
             return ChatResponse(
                 message=ChatMessage(
                     role=MessageRole.ASSISTANT,
-                    content=data.get("message", {}).get("content", ""),
+                    content=content,
+                    tool_calls=tool_calls,
                 ),
                 usage=UsageInfo(
                     prompt_tokens=data.get("prompt_eval_count", 0),
@@ -134,19 +164,10 @@ class OllamaProvider(BaseLLMProvider):
         model: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        tools: Optional[List[dict]] = None,
         **kwargs,
     ) -> AsyncGenerator[StreamChunk, None]:
-        """Stream a completion using Ollama.
-
-        Args:
-            messages: List of chat messages
-            model: Model to use (default: llama2)
-            temperature: Sampling temperature
-            max_tokens: Maximum tokens to generate
-
-        Yields:
-            StreamChunk objects with partial content
-        """
+        """Stream a completion using Ollama."""
         model = model or self.default_model
         url = f"{self.base_url}/api/chat"
 
@@ -161,6 +182,9 @@ class OllamaProvider(BaseLLMProvider):
 
         if max_tokens:
             payload["options"]["num_predict"] = max_tokens
+            
+        if tools:
+            payload["tools"] = tools
 
         try:
             # Use a fresh client for streaming to avoid connection issues
@@ -172,11 +196,32 @@ class OllamaProvider(BaseLLMProvider):
                             import json
 
                             data = json.loads(line)
-                            content = data.get("message", {}).get("content", "")
+                            message_data = data.get("message", {})
+                            content = message_data.get("content", "")
                             done = data.get("done", False)
+                            
+                            # Extract tool calls if present
+                            tool_calls = None
+                            tool_calls_data = message_data.get("tool_calls")
+                            if tool_calls_data:
+                                tool_calls = []
+                                for tc in tool_calls_data:
+                                    function_data = tc.get("function", {})
+                                    tool_calls.append(
+                                        ToolCall(
+                                            function=ToolCallFunction(
+                                                name=function_data.get("name"),
+                                                arguments=function_data.get("arguments", {}),
+                                            )
+                                        )
+                                    )
 
-                            if content or done:
-                                yield StreamChunk(content=content, done=done)
+                            if content or done or tool_calls:
+                                yield StreamChunk(
+                                    content=content,
+                                    done=done,
+                                    tool_calls=tool_calls
+                                )
 
         except httpx.HTTPError as e:
             logger.error(f"Ollama streaming error: {e}")

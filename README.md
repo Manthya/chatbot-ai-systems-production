@@ -393,6 +393,7 @@ DEBUG=true
 ## 📈 Roadmap
 
 - [x] **Phase 1**: Core Chatbot with Open Source LLM
+- [x] **Phase 1.1**: MCP Tool Support (Ollama)
 - [ ] **Phase 2**: Data Persistence & Memory Module
 - [ ] **Phase 3**: Multi-Provider Orchestration
 - [ ] **Phase 4**: Semantic Caching

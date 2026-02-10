@@ -17,8 +17,10 @@ from chatbot_ai_system.models.schemas import (
     HealthResponse,
     MessageRole,
     StreamChunk,
+    ToolCall,
 )
 from chatbot_ai_system.providers import OllamaProvider
+from chatbot_ai_system.tools import registry
 
 logger = logging.getLogger(__name__)
 
@@ -95,18 +97,52 @@ async def chat_completion(request: ChatRequest):
         # Get all messages for context
         all_messages = _conversations[conversation_id]
 
-        response = await provider.complete(
-            messages=all_messages,
-            model=request.model,
-            temperature=request.temperature,
-            max_tokens=request.max_tokens,
-        )
+        max_turns = 5
+        final_response = None
 
-        # Add assistant response to conversation history
-        _conversations[conversation_id].append(response.message)
+        for _ in range(max_turns):
+            response = await provider.complete(
+                messages=all_messages,
+                model=request.model,
+                temperature=request.temperature,
+                max_tokens=request.max_tokens,
+                tools=registry.get_ollama_tools(),
+            )
 
-        response.conversation_id = conversation_id
-        return response
+            # Add assistant response to conversation history
+            _conversations[conversation_id].append(response.message)
+            final_response = response
+
+            # Check for tool calls
+            if not response.message.tool_calls:
+                break
+
+            # Execute tools
+            for tool_call in response.message.tool_calls:
+                tool_name = tool_call.function.name
+                tool_args = tool_call.function.arguments
+                
+                # logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
+                
+                try:
+                    tool = registry.get_tool(tool_name)
+                    result = await tool.run(**tool_args)
+                except Exception as e:
+                    result = f"Error executing tool {tool_name}: {e}"
+
+                # Add tool result to history
+                _conversations[conversation_id].append(
+                    ChatMessage(
+                        role=MessageRole.TOOL,
+                        content=str(result),
+                    )
+                )
+
+        if final_response:
+            final_response.conversation_id = conversation_id
+            return final_response
+        else:
+             raise HTTPException(status_code=500, detail="No response generated")
 
     except Exception as e:
         logger.error(f"Chat completion error: {e}")
@@ -212,30 +248,65 @@ async def websocket_chat_stream(websocket: WebSocket):
                     _conversations[conversation_id].append(msg)
 
             try:
-                # Stream response
-                full_content = ""
-                async for chunk in provider.stream(
-                    messages=_conversations[conversation_id],
-                    model=request.model,
-                    temperature=request.temperature,
-                    max_tokens=request.max_tokens,
-                ):
+                # Tool loop for streaming
+                max_turns = 5
+                
+                for _ in range(max_turns):
+                    full_content = ""
+                    current_tool_calls = []
+                    
+                    # Stream response
+                    async for chunk in provider.stream(
+                        messages=_conversations[conversation_id],
+                        model=request.model,
+                        temperature=request.temperature,
+                        max_tokens=request.max_tokens,
+                        tools=registry.get_ollama_tools(),
+                    ):
+                        if not is_connected:
+                            break
+                        
+                        full_content += chunk.content
+                        
+                        if chunk.tool_calls:
+                            current_tool_calls.extend(chunk.tool_calls)
+                            
+                        chunk.conversation_id = conversation_id
+                        try:
+                            await websocket.send_json(chunk.model_dump())
+                        except Exception as send_error:
+                            logger.warning(f"Error sending chunk: {send_error}")
+                            is_connected = False
+                            break
+                    
                     if not is_connected:
                         break
-                    full_content += chunk.content
-                    chunk.conversation_id = conversation_id
-                    try:
-                        await websocket.send_json(chunk.model_dump())
-                    except Exception as send_error:
-                        logger.warning(f"Error sending chunk: {send_error}")
-                        is_connected = False
-                        break
 
-                if is_connected and full_content:
                     # Add assistant message to conversation
-                    _conversations[conversation_id].append(
-                        ChatMessage(role=MessageRole.ASSISTANT, content=full_content)
-                    )
+                    assistant_msg = ChatMessage(role=MessageRole.ASSISTANT, content=full_content)
+                    if current_tool_calls:
+                        assistant_msg.tool_calls = current_tool_calls
+                    
+                    _conversations[conversation_id].append(assistant_msg)
+
+                    # If no tool calls, we are done
+                    if not current_tool_calls:
+                        break
+                        
+                    # Execute tools
+                    for tc in current_tool_calls:
+                        tool_name = tc.function.name
+                        tool_args = tc.function.arguments
+                        
+                        try:
+                            tool = registry.get_tool(tool_name)
+                            result = await tool.run(**tool_args)
+                        except Exception as e:
+                            result = f"Error executing tool {tool_name}: {e}"
+                            
+                        _conversations[conversation_id].append(
+                            ChatMessage(role=MessageRole.TOOL, content=str(result))
+                        )
 
             except Exception as e:
                 logger.error(f"Streaming error: {e}")

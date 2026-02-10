@@ -13,6 +13,17 @@ class MessageRole(str, Enum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
+    TOOL = "tool"
+
+
+class ToolCallFunction(BaseModel):
+    name: str
+    arguments: Dict[str, Any]
+
+
+class ToolCall(BaseModel):
+    function: ToolCallFunction
+    type: str = "function"
 
 
 class ChatMessage(BaseModel):
@@ -20,6 +31,7 @@ class ChatMessage(BaseModel):
 
     role: MessageRole
     content: str
+    tool_calls: Optional[List[ToolCall]] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     metadata: Optional[Dict[str, Any]] = None
 
@@ -60,6 +72,7 @@ class StreamChunk(BaseModel):
 
     content: str
     done: bool = False
+    tool_calls: Optional[List[ToolCall]] = None
     conversation_id: Optional[str] = None
 
 
