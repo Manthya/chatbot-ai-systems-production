@@ -8,8 +8,8 @@ async def debug_greeting():
     payload = {
         "model": "qwen2.5-coder:7b",
         "messages": [
-            {"role": "system", "content": "You are a helpful AI assistant. You have access to tools, but you should only use them when necessary. For general conversation, greetings, and non-technical questions, respond with natural language in plain text. Do not output JSON unless you are explicitly calling a tool."},
-            {"role": "user", "content": "hii"}
+            {"role": "system", "content": "You are a helpful AI assistant with access to tools."},
+            {"role": "user", "content": "What is in the current directory?"}
         ],
         "stream": False,
         "tools": [

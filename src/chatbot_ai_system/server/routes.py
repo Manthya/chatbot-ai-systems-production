@@ -317,6 +317,13 @@ async def websocket_chat_stream(websocket: WebSocket):
                     
                     if not is_connected:
                         break
+                    
+                    # Fallback: support models like Qwen that output raw JSON in content
+                    if not current_tool_calls and full_content:
+                        parsed_tool_calls = provider._try_parse_tool_calls(full_content)
+                        if parsed_tool_calls:
+                            current_tool_calls = parsed_tool_calls
+                            logger.info(f"Fallback: Parsed {len(current_tool_calls)} tool calls from content text.")
 
                     # Add assistant message to conversation
                     # Clear content if tool calls are present (consistent with chat_completion fix)
