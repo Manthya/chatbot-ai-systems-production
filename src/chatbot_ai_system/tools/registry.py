@@ -1,4 +1,4 @@
-from typing import Dict, List, Type, Any
+from typing import Dict, List, Type, Any, Optional
 from .base import MCPTool
 try:
     from .mcp_client import MCPClient
@@ -86,29 +86,45 @@ class ToolRegistry:
                 # Log error but continue
                 print(f"Error fetching tools from client: {e}")
 
-    async def get_ollama_tools(self) -> List[Dict]:
-        """Get all tools in Ollama format."""
-        # Always refresh to get latest state of remote tools
-        # For performance, maybe we shouldn't do this *every* request, but for now it ensures correctness.
-        # Tools should be refreshed explicitly (e.g. at startup)
-        # to avoid overhead and potential failures on every request.
-        # if self._mcp_clients:
-        #    await self.refresh_remote_tools()
-            
-        # Define Essential Tools (ChatGPT-like curated set)
-        ESSENTIAL_TOOLS = {
-            # Filesystem
-            "read_file", "list_directory", "write_file", "search_files", "get_file_info",
-            # Git
-            "git_status", "git_log", "git_diff", "git_show", "git_add", "git_commit", "git_push",
-            # Fetch
-            "fetch_html",
-            # System
-            "get_current_time", "check_repo_status"
-        }
-
-        local_tools = [tool.to_ollama_format() for tool in self._tools.values() if tool.name in ESSENTIAL_TOOLS]
-        remote_tools = [tool.to_ollama_format() for tool in self._remote_tools_cache.values() if tool.name in ESSENTIAL_TOOLS]
+    async def get_ollama_tools(self, query: Optional[str] = None) -> List[Dict]:
+        """Get filtered tools in Ollama format based on query."""
+        MAX_TOOLS = 5
         
-        # print(f"DEBUG: get_ollama_tools returning {len(local_tools)} local and {len(remote_tools)} remote tools (Filtered)")
-        return local_tools + remote_tools
+        # Get all available tools
+        local_tools = [t for t in self._tools.values()]
+        remote_tools = [t for t in self._remote_tools_cache.values()]
+        all_tools = local_tools + remote_tools
+
+        if not query:
+            # If no query, return an empty list or a default set (we'll prefer empty for "Decision Discipline")
+            return []
+
+        # Step 2 & 8: Filter tools based on keywords and enforce MAX_TOOLS
+        q = query.lower()
+        filtered = []
+        
+        # Filesystem
+        if any(k in q for k in ["file", "read", "directory", "path", "folder", "list", "write", "search"]):
+             filtered.extend([t for t in all_tools if t.name in ["read_file", "list_directory", "write_file", "search_files", "get_file_info"]])
+        
+        # Git
+        if any(k in q for k in ["git", "commit", "branch", "log", "diff", "repo", "status", "push"]):
+            filtered.extend([t for t in all_tools if t.name.startswith("git_") or t.name == "check_repo_status"])
+            
+        # Fetch / Web
+        if any(k in q for k in ["fetch", "url", "http", "website", "html", "get", "download"]):
+            filtered.extend([t for t in all_tools if t.name == "fetch_html"])
+            
+        # Time
+        if any(k in q for k in ["time", "now", "date", "clock"]):
+            filtered.extend([t for t in all_tools if t.name == "get_current_time"])
+
+        # Deduplicate and limit
+        seen = set()
+        final_tools = []
+        for t in filtered:
+            if t.name not in seen:
+                final_tools.append(t.to_ollama_format())
+                seen.add(t.name)
+        
+        return final_tools[:MAX_TOOLS]

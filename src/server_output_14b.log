@@ -1,0 +1,109 @@
+INFO:     Will watch for changes in these directories: ['/Users/mk/Documents/chatbot-ai-systems-production/src']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [12609] using WatchFiles
+INFO:     Started server process [12670]
+INFO:     Waiting for application startup.
+2026-02-10 19:17:56,024 - chatbot_ai_system.server.main - INFO - Starting Chatbot AI System v0.1.0
+2026-02-10 19:17:56,024 - chatbot_ai_system.server.main - INFO - Debug mode: True
+2026-02-10 19:17:56,024 - chatbot_ai_system.server.main - INFO - Default LLM provider: ollama
+2026-02-10 19:17:56,024 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server filesystem...
+Secure MCP Filesystem Server running on stdio
+2026-02-10 19:17:57,138 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server filesystem
+2026-02-10 19:17:57,139 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for filesystem...
+Client does not support MCP Roots, using allowed directories set from server args: [ '/Users/mk/Documents/chatbot-ai-systems-production/src' ]
+2026-02-10 19:17:57,142 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for filesystem: 14 tools found
+2026-02-10 19:17:57,142 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server git...
+2026-02-10 19:17:58,822 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server git
+2026-02-10 19:17:58,822 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for git...
+2026-02-10 19:17:58,831 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for git: 25 tools found
+2026-02-10 19:17:58,832 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server fetch...
+2026-02-10 19:18:01,320 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server fetch
+2026-02-10 19:18:01,320 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for fetch...
+2026-02-10 19:18:01,322 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for fetch: 4 tools found
+2026-02-10 19:18:01,322 - chatbot_ai_system.server.main - INFO - MCP servers registered and tools refreshed
+INFO:     Application startup complete.
+INFO:     127.0.0.1:62194 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:62202 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:62203 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:62205 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:62209 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+2026-02-10 19:18:15,161 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'What files are in the current directory?'
+2026-02-10 19:18:19,498 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 19:18:19,499 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: USE_TOOL...
+2026-02-10 19:18:19,499 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: USE_TOOL
+2026-02-10 19:18:19,499 - chatbot_ai_system.server.routes - INFO - PLANNING: Tools exposed: ['read_file', 'write_file', 'list_directory', 'search_files', 'get_file_info']
+2026-02-10 19:18:21,823 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 19:18:21,860 - chatbot_ai_system.server.routes - INFO - EXECUTING TOOL: list_directory
+2026-02-10 19:18:22,433 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 19:18:24,531 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: TOOL
+2026-02-10 19:18:24,532 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:62244 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+2026-02-10 19:18:24,534 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'hii'
+2026-02-10 19:18:24,937 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 19:18:24,938 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: NO_TOOL...
+2026-02-10 19:18:24,938 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: NO_TOOL
+2026-02-10 19:18:25,216 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 19:18:25,524 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: MODEL
+2026-02-10 19:18:25,524 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:49987 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection closed
+2026-02-10 21:20:46,653 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     127.0.0.1:49989 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:50010 - "HEAD /docs HTTP/1.1" 200 OK
+2026-02-10 21:24:30,703 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'hi'
+2026-02-10 21:24:35,463 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:24:35,466 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: NO_TOOL...
+2026-02-10 21:24:35,466 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: NO_TOOL
+2026-02-10 21:24:35,770 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:24:36,014 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: MODEL
+2026-02-10 21:24:43,934 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'hello budddy'
+2026-02-10 21:24:44,682 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:24:44,683 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: NO_TOOL...
+2026-02-10 21:24:44,683 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: NO_TOOL
+2026-02-10 21:24:44,942 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:24:45,856 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: MODEL
+2026-02-10 21:25:10,437 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'i want to about mcp protocall by anthropic'
+2026-02-10 21:25:11,087 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:25:11,087 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: NO_TOOL...
+2026-02-10 21:25:11,087 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: NO_TOOL
+2026-02-10 21:25:11,426 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:25:19,548 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: MODEL
+2026-02-10 21:26:22,818 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'can you give me link of some blogs which shows mcp documentation'
+2026-02-10 21:26:23,620 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:26:23,621 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: USE_TOOL...
+2026-02-10 21:26:23,621 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: USE_TOOL
+2026-02-10 21:26:23,634 - chatbot_ai_system.server.routes - INFO - PLANNING: Tools exposed: ['check_repo_status', 'git_add', 'git_branch', 'git_checkout', 'git_cherry_pick']
+2026-02-10 21:26:29,234 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:26:29,271 - chatbot_ai_system.server.routes - INFO - EXECUTING TOOL: git_branch
+2026-02-10 21:26:30,710 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:26:39,196 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: TOOL
+2026-02-10 21:28:53,173 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+2026-02-10 21:28:53,179 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+2026-02-10 21:28:53,198 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+2026-02-10 21:31:42,494 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'i am talking about model context protocall'
+2026-02-10 21:31:46,721 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:31:46,721 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: NO_TOOL...
+2026-02-10 21:31:46,721 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: NO_TOOL
+2026-02-10 21:31:48,607 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:31:57,400 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: MODEL
+2026-02-10 21:32:32,991 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'can you provide me some good github repo for using mcp'
+2026-02-10 21:32:33,890 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:32:33,890 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: USE_TOOL...
+2026-02-10 21:32:33,890 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: USE_TOOL
+2026-02-10 21:32:33,891 - chatbot_ai_system.server.routes - INFO - PLANNING: Tools exposed: ['check_repo_status', 'git_add', 'git_branch', 'git_checkout', 'git_cherry_pick']
+2026-02-10 21:32:41,854 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:32:41,894 - chatbot_ai_system.server.routes - INFO - EXECUTING TOOL: git_branch
+2026-02-10 21:32:44,846 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:32:57,334 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: TOOL

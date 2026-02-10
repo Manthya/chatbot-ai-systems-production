@@ -259,122 +259,236 @@ async def websocket_chat_stream(websocket: WebSocket):
             conversation_id = request.conversation_id or str(uuid.uuid4())
             if conversation_id not in _conversations:
                 _conversations[conversation_id] = []
-                # Add default system prompt for context
-                _conversations[conversation_id].append(ChatMessage(
-                    role=MessageRole.SYSTEM,
-                    content=(
-                        "You are a helpful AI assistant with access to tools. Use tools only when "
-                        "the user's request requires them. For greetings and general conversation, "
-                        "respond naturally in plain text."
-                    )
-                ))
+                # Phase 1.2: We don't add a static system prompt here anymore. 
+                # We inject dynamic system prompts based on the planning phase.
 
             # Add new messages from client
             # We use a combined hash of role and content to deduplicate
             history_fingerprints = [(m.role, m.content) for m in _conversations[conversation_id]]
+            new_user_message = None
             for msg in request.messages:
                 if (msg.role, msg.content) not in history_fingerprints:
                     _conversations[conversation_id].append(msg)
                     history_fingerprints.append((msg.role, msg.content))
+                    if msg.role == MessageRole.USER:
+                        new_user_message = msg
+
+            # If no new user message (e.g. just connecting), find the last one
+            if not new_user_message:
+                for m in reversed(_conversations[conversation_id]):
+                    if m.role == MessageRole.USER:
+                        new_user_message = m
+                        break
+            
+            if not new_user_message:
+                 continue # Should not happen in normal flow
+
+            user_query = new_user_message.content
 
             try:
-                # Tool loop for streaming
-                max_turns = 5
+                # --- STEP 1 & 5: PLANNING PHASE ---
+                # Decide if tool is needed
                 
-                for _ in range(max_turns):
-                    full_content = ""
-                    current_tool_calls = []
+                logger.info(f"PLANNING: Assessing need for tools for query: '{user_query}'")
+                
+                planning_messages = [
+                    ChatMessage(
+                        role=MessageRole.SYSTEM,
+                        content=(
+                            "You are a routing agent. Your job is to decide if the user's request requires external tools.\n"
+                            "Return ONLY 'USE_TOOL' if the request involves: file system access, git operations, fetching URLs, or checking system time.\n"
+                            "Return ONLY 'NO_TOOL' if the request is: general knowledge, coding help (without reading files), greetings, or small talk.\n"
+                            "Answer with exactly one word."
+                        )
+                    ),
+                    ChatMessage(role=MessageRole.USER, content=user_query)
+                ]
+                
+                planning_response = await provider.complete(
+                    messages=planning_messages,
+                    model=request.model, # Use same model for planning
+                    max_tokens=10,
+                    temperature=0.1 # Low temp for determinism
+                )
+                
+                decision = planning_response.message.content.strip().upper()
+                # Fallback if model is chatty
+                if "USE_TOOL" in decision:
+                    decision = "USE_TOOL"
+                else:
+                    decision = "NO_TOOL"
                     
-                    # Stream response
-                    async for chunk in provider.stream(
-                        messages=_conversations[conversation_id],
-                        model=request.model,
-                        temperature=request.temperature,
-                        max_tokens=request.max_tokens,
-                        tools=await registry.get_ollama_tools(),
-                    ):
-                        if not is_connected:
-                            break
-                        
-                        full_content += chunk.content
-                        
-                        if chunk.tool_calls:
-                            current_tool_calls.extend(chunk.tool_calls)
-                            
-                        chunk.conversation_id = conversation_id
-                        
-                        # Suppress 'done' if we are in the middle of tool processing
-                        # We will send a final 'done' chunk ourselves later if needed
-                        if chunk.done:
-                            continue
+                logger.info(f"PLANNING DECISION: {decision}")
 
-                        try:
-                            await websocket.send_json(chunk.model_dump())
-                        except Exception as send_error:
-                            logger.warning(f"Error sending chunk: {send_error}")
-                            is_connected = False
-                            break
-                    
+                # --- STEP 2 & 8: TOOL FILTERING ---
+                target_tools = []
+                if decision == "USE_TOOL":
+                    target_tools = await registry.get_ollama_tools(query=user_query)
+                    if not target_tools:
+                        logger.info("PLANNING: Decision was USE_TOOL but no relevant tools found. Reverting to NO_TOOL.")
+                        decision = "NO_TOOL"
+                    else:
+                        tool_names = [t['function']['name'] for t in target_tools]
+                        logger.info(f"PLANNING: Tools exposed: {tool_names}")
+
+                # --- STEP 3 & 4: EXECUTION / JSON ENFORCEMENT ---
+                
+                current_turn_messages = list(_conversations[conversation_id])
+                
+                # Dynamic System Prompt
+                if decision == "USE_TOOL":
+                    system_instructions = (
+                        "You are an AI assistant with access to external tools.\n"
+                        "RULES:\n"
+                        "1. You MUST call one of the provided tools to answer the question.\n"
+                        "2. Return ONLY a valid JSON tool call in the format {\"name\": \"...\", \"arguments\": {...}}.\n"
+                        "3. Do NOT explain your thought process or talk. Just output the JSON."
+                    )
+                else:
+                    system_instructions = (
+                        "You are a helpful AI assistant.\n"
+                        "No external tools are available or needed for this question.\n"
+                        "Answer using your internal knowledge only.\n"
+                        "Respond in natural language."
+                    )
+
+                # Inject strict system prompt for this turn
+                # We replace any existing system prompt or append a specific one for this turn
+                current_turn_messages.insert(0, ChatMessage(role=MessageRole.SYSTEM, content=system_instructions))
+
+                
+                full_content = ""
+                current_tool_calls = []
+                final_answer_source = "MODEL"
+
+                async for chunk in provider.stream(
+                    messages=current_turn_messages,
+                    model=request.model,
+                    temperature=request.temperature,
+                    max_tokens=request.max_tokens,
+                    tools=target_tools if decision == "USE_TOOL" else None,
+                ):
                     if not is_connected:
                         break
                     
-                    # Fallback: support models like Qwen that output raw JSON in content
-                    if not current_tool_calls and full_content:
-                        parsed_tool_calls = provider._try_parse_tool_calls(full_content)
-                        if parsed_tool_calls:
-                            current_tool_calls = parsed_tool_calls
-                            logger.info(f"Fallback: Parsed {len(current_tool_calls)} tool calls from content text.")
-
-                    # Add assistant message to conversation
-                    # Clear content if tool calls are present (consistent with chat_completion fix)
-                    stored_content = full_content if not current_tool_calls else ""
-                    assistant_msg = ChatMessage(
-                        role=MessageRole.ASSISTANT, 
-                        content=stored_content,
-                        tool_calls=current_tool_calls
-                    )
-                    _conversations[conversation_id].append(assistant_msg)
-
-                    # If no tool calls, we are done - send a final done chunk
-                    if not current_tool_calls:
-                        try:
-                            final_chunk = StreamChunk(content="", done=True, conversation_id=conversation_id)
-                            await websocket.send_json(final_chunk.model_dump())
-                        except Exception:
-                            pass
-                        break
+                    full_content += chunk.content
+                    
+                    if chunk.tool_calls:
+                        current_tool_calls.extend(chunk.tool_calls)
                         
-                    # Execute tools
+                    chunk.conversation_id = conversation_id
+                    
+                    if chunk.done:
+                        continue
+
+                    # If we are in USE_TOOL mode, we suppress content chunks until we confirm it's not a tool call
+                    # ignoring this for now to keep UI responsive, but for strict JSON we might want to buffer?
+                    # Qwen usually outputs JSON directly.
+                    
+                    try:
+                        await websocket.send_json(chunk.model_dump())
+                    except Exception:
+                        is_connected = False
+                        break
+                
+                if not is_connected:
+                    break
+                
+                # --- Fallback Parsing for Qwen ---
+                if decision == "USE_TOOL" and not current_tool_calls and full_content:
+                     parsed_tool_calls = provider._try_parse_tool_calls(full_content)
+                     if parsed_tool_calls:
+                        current_tool_calls = parsed_tool_calls
+                        logger.info(f"Fallback: Parsed tool calls from content: {len(current_tool_calls)}")
+                        # If we parsed tool calls from content, we should probably clear the content displayed to user
+                        # implying the previous chunks were "thinking" / JSON raw.
+                        # But we already sent them. This is a UI UX nuance. 
+                        # For now, we proceed.
+
+                # Update conversation history
+                stored_content = full_content if not current_tool_calls else ""
+                assistant_msg = ChatMessage(
+                    role=MessageRole.ASSISTANT, 
+                    content=stored_content,
+                    tool_calls=current_tool_calls
+                )
+                _conversations[conversation_id].append(assistant_msg) # Persist to history
+
+                # --- STEP 6: SYNTHESIS Phase ---
+                if current_tool_calls:
+                    final_answer_source = "TOOL"
+                    
                     for tc in current_tool_calls:
                         tool_name = tc.function.name
                         tool_args = tc.function.arguments
                         
-                        # Yield "Thinking" status chunk
+                         # Yield "Thinking" status
                         if is_connected:
                             try:
-                                status_chunk = StreamChunk(
-                                    content="",
-                                    status=f"Thinking: {tool_name}...",
-                                    conversation_id=conversation_id
-                                )
-                                await websocket.send_json(status_chunk.model_dump())
+                                await websocket.send_json(StreamChunk(content="", status=f"Thinking: {tool_name}...", conversation_id=conversation_id).model_dump())
                             except Exception:
                                 pass
 
-                        logger.info(f"Streaming turn: Executing tool {tool_name}")
+                        logger.info(f"EXECUTING TOOL: {tool_name}")
                         try:
                             tool = registry.get_tool(tool_name)
                             result = await tool.run(**tool_args)
                         except Exception as e:
-                            result = f"Error executing tool {tool_name}: {e}"
-                            
-                        _conversations[conversation_id].append(
-                            ChatMessage(
-                                role=MessageRole.TOOL, 
-                                content=str(result),
-                                tool_call_id=tc.id
-                            )
+                            # Step 7: Tool Failure Fallback
+                            result = f"Error: The tool execution failed: {str(e)}"
+
+                        tool_msg = ChatMessage(
+                             role=MessageRole.TOOL,
+                             content=str(result),
+                             tool_call_id=tc.id
                         )
+                        _conversations[conversation_id].append(tool_msg)
+                        
+                        # Append to current context for synthesis
+                        current_turn_messages.append(assistant_msg)
+                        current_turn_messages.append(tool_msg)
+
+                    # Synthesis call
+                    synthesis_system_msg = ChatMessage(
+                        role=MessageRole.SYSTEM,
+                        content=(
+                            "Tool result:\n"
+                            f"{str(result)[:2000]}...\n\n" # Truncate for safety/context window?
+                            "Using ONLY the tool result above, answer the original question clearly."
+                        )
+                    )
+                    # We might want to just append this instruction as a user message or system message at end
+                    # Replacing the strict tool system prompt
+                    current_turn_messages = [m for m in current_turn_messages if m.role != MessageRole.SYSTEM]
+                    current_turn_messages.insert(0, synthesis_system_msg)
+
+                    async for chunk in provider.stream(
+                        messages=current_turn_messages,
+                        model=request.model,
+                        tools=None # No tools for synthesis
+                    ):
+                         if not is_connected: break
+                         # Send synthesis chunks
+                         try:
+                            await websocket.send_json(chunk.model_dump())
+                         except Exception:
+                            is_connected = False
+                            break
+                            
+                    # Start tracking synthesis response (not implementing separate history append for synthesis 
+                    # as it usually flows as one turn in UI, but backend stores it as separate assistant msg? 
+                    # Standard ollama flow appends synthesis as a new assistant message)
+                    full_synthesis = "" # Capture if needed for logs
+                    
+                # Final Done Chunk
+                if is_connected:
+                    try:
+                        await websocket.send_json(StreamChunk(content="", done=True, conversation_id=conversation_id).model_dump())
+                    except Exception:
+                        pass
+                
+                logger.info(f"REQUEST COMPLETE. Source: {final_answer_source}")
+
 
             except Exception as e:
                 logger.error(f"Streaming error: {e}")

@@ -1,0 +1,27 @@
+INFO:     Will watch for changes in these directories: ['/Users/mk/Documents/chatbot-ai-systems-production/src']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [9566] using StatReload
+INFO:     Started server process [9626]
+INFO:     Waiting for application startup.
+2026-02-10 19:10:55,394 - chatbot_ai_system.server.main - INFO - Starting Chatbot AI System v0.1.0
+2026-02-10 19:10:55,394 - chatbot_ai_system.server.main - INFO - Debug mode: True
+2026-02-10 19:10:55,394 - chatbot_ai_system.server.main - INFO - Default LLM provider: ollama
+ERROR:    Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/starlette/routing.py", line 694, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/fastapi/routing.py", line 203, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/fastapi/routing.py", line 228, in __aenter__
+    await self._router._startup()
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/fastapi/routing.py", line 4557, in _startup
+    await handler()
+  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/server/main.py", line 52, in startup_event
+    from chatbot_ai_system.tools.mcp_client import MCPClient
+  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/tools/mcp_client.py", line 8, in <module>
+    from mcp import ClientSession, StdioServerParameters
+ModuleNotFoundError: No module named 'mcp'
+
+ERROR:    Application startup failed. Exiting.

@@ -149,8 +149,9 @@ class OllamaProvider(BaseLLMProvider):
         self,
         messages: List[ChatMessage],
         model: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = 0.2,
         max_tokens: Optional[int] = None,
+        repeat_penalty: float = 1.1,
         tools: Optional[List[dict]] = None,
         **kwargs,
     ) -> ChatResponse:
@@ -165,6 +166,7 @@ class OllamaProvider(BaseLLMProvider):
             "stream": False,
             "options": {
                 "temperature": temperature,
+                "repeat_penalty": repeat_penalty,
             },
         }
 
@@ -237,8 +239,9 @@ class OllamaProvider(BaseLLMProvider):
         self,
         messages: List[ChatMessage],
         model: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = 0.2,
         max_tokens: Optional[int] = None,
+        repeat_penalty: float = 1.1,
         tools: Optional[List[dict]] = None,
         **kwargs,
     ) -> AsyncGenerator[StreamChunk, None]:
@@ -252,6 +255,7 @@ class OllamaProvider(BaseLLMProvider):
             "stream": True,
             "options": {
                 "temperature": temperature,
+                "repeat_penalty": repeat_penalty,
             },
         }
 
