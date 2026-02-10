@@ -47,10 +47,58 @@ def create_app() -> FastAPI:
         logger.info(f"Starting Chatbot AI System v{__version__}")
         logger.info(f"Debug mode: {settings.debug}")
         logger.info(f"Default LLM provider: {settings.default_llm_provider}")
+        
+        # Initialize and register MCP clients
+        from chatbot_ai_system.tools.mcp_client import MCPClient
+        from chatbot_ai_system.tools import registry
+        import os
+        
+        # Filesystem MCP - restrict to current working directory
+        fs_client = MCPClient(
+            name="filesystem",
+            command="npx",
+            args=[
+                "-y",
+                "@modelcontextprotocol/server-filesystem",
+                os.getcwd()
+            ],
+            env=os.environ.copy()
+        )
+        registry.register_mcp_client(fs_client)
+        
+        # Git MCP
+        git_client = MCPClient(
+            name="git",
+            command="npx",
+            args=["-y", "@mseep/git-mcp-server"],
+            env=os.environ.copy()
+        )
+        registry.register_mcp_client(git_client)
+        
+        # Fetch MCP
+        fetch_client = MCPClient(
+            name="fetch",
+            command="npx",
+            args=["-y", "zcaceres/fetch-mcp"],
+            env=os.environ.copy()
+        )
+        registry.register_mcp_client(fetch_client)
+        
+        # Refresh tools
+        await registry.refresh_remote_tools()
+        logger.info("MCP servers registered and tools refreshed")
 
     @app.on_event("shutdown")
     async def shutdown_event():
         logger.info("Shutting down Chatbot AI System")
+        
+        # Cleanup MCP clients 
+        # (The registry or clients should ideally handle this, but for now we rely on process termination 
+        # or we could add a cleanup method to registry)
+        from chatbot_ai_system.tools import registry
+        # We might want to explicitly close them if we had a reference, but they are in the registry's list.
+        # Ideally, we'd add a close_all method to registry.
+        
         # Cleanup providers
         from .routes import _providers
         for provider in _providers.values():

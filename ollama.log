@@ -272,3 +272,925 @@ time=2026-02-10T14:51:50.114+09:00 level=INFO source=server.go:1332 msg="llama r
 [GIN] 2026/02/10 - 14:51:51 | 200 |  563.255333ms |       127.0.0.1 | POST     "/api/chat"
 [GIN] 2026/02/10 - 14:51:52 | 200 |  892.580375ms |       127.0.0.1 | POST     "/api/chat"
 [GIN] 2026/02/10 - 14:51:57 | 200 |    4.6675345s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:12:34 | 200 |    3.459417ms |       127.0.0.1 | GET      "/api/tags"
+llama_model_load_from_file_impl: using device Metal (Apple M2) (unknown id) - 10922 MiB free
+llama_model_loader: loaded meta data with 30 key-value pairs and 255 tensors from /Users/mk/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = llama
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = Llama 3.2 3B Instruct
+llama_model_loader: - kv   3:                           general.finetune str              = Instruct
+llama_model_loader: - kv   4:                           general.basename str              = Llama-3.2
+llama_model_loader: - kv   5:                         general.size_label str              = 3B
+llama_model_loader: - kv   6:                               general.tags arr[str,6]       = ["facebook", "meta", "pytorch", "llam...
+llama_model_loader: - kv   7:                          general.languages arr[str,8]       = ["en", "de", "fr", "it", "pt", "hi", ...
+llama_model_loader: - kv   8:                          llama.block_count u32              = 28
+llama_model_loader: - kv   9:                       llama.context_length u32              = 131072
+llama_model_loader: - kv  10:                     llama.embedding_length u32              = 3072
+llama_model_loader: - kv  11:                  llama.feed_forward_length u32              = 8192
+llama_model_loader: - kv  12:                 llama.attention.head_count u32              = 24
+llama_model_loader: - kv  13:              llama.attention.head_count_kv u32              = 8
+llama_model_loader: - kv  14:                       llama.rope.freq_base f32              = 500000.000000
+llama_model_loader: - kv  15:     llama.attention.layer_norm_rms_epsilon f32              = 0.000010
+llama_model_loader: - kv  16:                 llama.attention.key_length u32              = 128
+llama_model_loader: - kv  17:               llama.attention.value_length u32              = 128
+llama_model_loader: - kv  18:                          general.file_type u32              = 15
+llama_model_loader: - kv  19:                           llama.vocab_size u32              = 128256
+llama_model_loader: - kv  20:                 llama.rope.dimension_count u32              = 128
+llama_model_loader: - kv  21:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  22:                         tokenizer.ggml.pre str              = llama-bpe
+llama_model_loader: - kv  23:                      tokenizer.ggml.tokens arr[str,128256]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+llama_model_loader: - kv  24:                  tokenizer.ggml.token_type arr[i32,128256]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  25:                      tokenizer.ggml.merges arr[str,280147]  = ["Ġ Ġ", "Ġ ĠĠĠ", "ĠĠ ĠĠ", "...
+llama_model_loader: - kv  26:                tokenizer.ggml.bos_token_id u32              = 128000
+llama_model_loader: - kv  27:                tokenizer.ggml.eos_token_id u32              = 128009
+llama_model_loader: - kv  28:                    tokenizer.chat_template str              = {{- bos_token }}\n{%- if custom_tools ...
+llama_model_loader: - kv  29:               general.quantization_version u32              = 2
+llama_model_loader: - type  f32:   58 tensors
+llama_model_loader: - type q4_K:  168 tensors
+llama_model_loader: - type q6_K:   29 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = Q4_K - Medium
+print_info: file size   = 1.87 GiB (5.01 BPW) 
+load: printing all EOG tokens:
+load:   - 128001 ('<|end_of_text|>')
+load:   - 128008 ('<|eom_id|>')
+load:   - 128009 ('<|eot_id|>')
+load: special tokens cache size = 256
+load: token to piece cache size = 0.7999 MB
+print_info: arch             = llama
+print_info: vocab_only       = 1
+print_info: model type       = ?B
+print_info: model params     = 3.21 B
+print_info: general.name     = Llama 3.2 3B Instruct
+print_info: vocab type       = BPE
+print_info: n_vocab          = 128256
+print_info: n_merges         = 280147
+print_info: BOS token        = 128000 '<|begin_of_text|>'
+print_info: EOS token        = 128009 '<|eot_id|>'
+print_info: EOT token        = 128001 '<|end_of_text|>'
+print_info: EOM token        = 128008 '<|eom_id|>'
+print_info: LF token         = 198 'Ċ'
+print_info: EOG token        = 128001 '<|end_of_text|>'
+print_info: EOG token        = 128008 '<|eom_id|>'
+print_info: EOG token        = 128009 '<|eot_id|>'
+print_info: max token length = 256
+llama_model_load: vocab only - skipping tensors
+time=2026-02-10T15:12:35.269+09:00 level=INFO source=server.go:392 msg="starting runner" cmd="/Applications/Ollama.app/Contents/Resources/ollama runner --model /Users/mk/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff --port 64825"
+time=2026-02-10T15:12:35.273+09:00 level=INFO source=sched.go:443 msg="system memory" total="16.0 GiB" free="2.7 GiB" free_swap="0 B"
+time=2026-02-10T15:12:35.273+09:00 level=INFO source=sched.go:450 msg="gpu memory" id=0 library=Metal available="10.2 GiB" free="10.7 GiB" minimum="512.0 MiB" overhead="0 B"
+time=2026-02-10T15:12:35.273+09:00 level=INFO source=server.go:459 msg="loading model" "model layers"=29 requested=-1
+time=2026-02-10T15:12:35.274+09:00 level=INFO source=device.go:240 msg="model weights" device=Metal size="1.9 GiB"
+time=2026-02-10T15:12:35.274+09:00 level=INFO source=device.go:251 msg="kv cache" device=Metal size="448.0 MiB"
+time=2026-02-10T15:12:35.274+09:00 level=INFO source=device.go:262 msg="compute graph" device=Metal size="256.5 MiB"
+time=2026-02-10T15:12:35.274+09:00 level=INFO source=device.go:272 msg="total memory" size="2.6 GiB"
+time=2026-02-10T15:12:35.311+09:00 level=INFO source=runner.go:963 msg="starting go runner"
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.028 sec
+ggml_metal_device_init: GPU name:   Apple M2
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple8  (1008)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal3  (5001)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: use residency sets    = true
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 11453.25 MB
+time=2026-02-10T15:12:35.314+09:00 level=INFO source=ggml.go:104 msg=system Metal.0.EMBED_LIBRARY=1 CPU.0.NEON=1 CPU.0.ARM_FMA=1 CPU.0.FP16_VA=1 CPU.0.DOTPROD=1 CPU.0.LLAMAFILE=1 CPU.0.ACCELERATE=1 compiler=cgo(clang)
+time=2026-02-10T15:12:35.457+09:00 level=INFO source=runner.go:999 msg="Server listening on 127.0.0.1:64825"
+time=2026-02-10T15:12:35.466+09:00 level=INFO source=runner.go:893 msg=load request="{Operation:commit LoraPath:[] Parallel:1 BatchSize:512 FlashAttention:false KvSize:4096 KvCacheType: NumThreads:4 GPULayers:29[ID:0 Layers:29(0..28)] MultiUserCache:false ProjectorPath: MainGPU:0 UseMmap:true}"
+time=2026-02-10T15:12:35.466+09:00 level=INFO source=server.go:1294 msg="waiting for llama runner to start responding"
+llama_model_load_from_file_impl: using device Metal (Apple M2) (unknown id) - 10922 MiB free
+time=2026-02-10T15:12:35.466+09:00 level=INFO source=server.go:1328 msg="waiting for server to become available" status="llm server loading model"
+llama_model_loader: loaded meta data with 30 key-value pairs and 255 tensors from /Users/mk/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = llama
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = Llama 3.2 3B Instruct
+llama_model_loader: - kv   3:                           general.finetune str              = Instruct
+llama_model_loader: - kv   4:                           general.basename str              = Llama-3.2
+llama_model_loader: - kv   5:                         general.size_label str              = 3B
+llama_model_loader: - kv   6:                               general.tags arr[str,6]       = ["facebook", "meta", "pytorch", "llam...
+llama_model_loader: - kv   7:                          general.languages arr[str,8]       = ["en", "de", "fr", "it", "pt", "hi", ...
+llama_model_loader: - kv   8:                          llama.block_count u32              = 28
+llama_model_loader: - kv   9:                       llama.context_length u32              = 131072
+llama_model_loader: - kv  10:                     llama.embedding_length u32              = 3072
+llama_model_loader: - kv  11:                  llama.feed_forward_length u32              = 8192
+llama_model_loader: - kv  12:                 llama.attention.head_count u32              = 24
+llama_model_loader: - kv  13:              llama.attention.head_count_kv u32              = 8
+llama_model_loader: - kv  14:                       llama.rope.freq_base f32              = 500000.000000
+llama_model_loader: - kv  15:     llama.attention.layer_norm_rms_epsilon f32              = 0.000010
+llama_model_loader: - kv  16:                 llama.attention.key_length u32              = 128
+llama_model_loader: - kv  17:               llama.attention.value_length u32              = 128
+llama_model_loader: - kv  18:                          general.file_type u32              = 15
+llama_model_loader: - kv  19:                           llama.vocab_size u32              = 128256
+llama_model_loader: - kv  20:                 llama.rope.dimension_count u32              = 128
+llama_model_loader: - kv  21:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  22:                         tokenizer.ggml.pre str              = llama-bpe
+llama_model_loader: - kv  23:                      tokenizer.ggml.tokens arr[str,128256]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+llama_model_loader: - kv  24:                  tokenizer.ggml.token_type arr[i32,128256]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  25:                      tokenizer.ggml.merges arr[str,280147]  = ["Ġ Ġ", "Ġ ĠĠĠ", "ĠĠ ĠĠ", "...
+llama_model_loader: - kv  26:                tokenizer.ggml.bos_token_id u32              = 128000
+llama_model_loader: - kv  27:                tokenizer.ggml.eos_token_id u32              = 128009
+llama_model_loader: - kv  28:                    tokenizer.chat_template str              = {{- bos_token }}\n{%- if custom_tools ...
+llama_model_loader: - kv  29:               general.quantization_version u32              = 2
+llama_model_loader: - type  f32:   58 tensors
+llama_model_loader: - type q4_K:  168 tensors
+llama_model_loader: - type q6_K:   29 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = Q4_K - Medium
+print_info: file size   = 1.87 GiB (5.01 BPW) 
+load: printing all EOG tokens:
+load:   - 128001 ('<|end_of_text|>')
+load:   - 128008 ('<|eom_id|>')
+load:   - 128009 ('<|eot_id|>')
+load: special tokens cache size = 256
+load: token to piece cache size = 0.7999 MB
+print_info: arch             = llama
+print_info: vocab_only       = 0
+print_info: n_ctx_train      = 131072
+print_info: n_embd           = 3072
+print_info: n_layer          = 28
+print_info: n_head           = 24
+print_info: n_head_kv        = 8
+print_info: n_rot            = 128
+print_info: n_swa            = 0
+print_info: is_swa_any       = 0
+print_info: n_embd_head_k    = 128
+print_info: n_embd_head_v    = 128
+print_info: n_gqa            = 3
+print_info: n_embd_k_gqa     = 1024
+print_info: n_embd_v_gqa     = 1024
+print_info: f_norm_eps       = 0.0e+00
+print_info: f_norm_rms_eps   = 1.0e-05
+print_info: f_clamp_kqv      = 0.0e+00
+print_info: f_max_alibi_bias = 0.0e+00
+print_info: f_logit_scale    = 0.0e+00
+print_info: f_attn_scale     = 0.0e+00
+print_info: n_ff             = 8192
+print_info: n_expert         = 0
+print_info: n_expert_used    = 0
+print_info: causal attn      = 1
+print_info: pooling type     = 0
+print_info: rope type        = 0
+print_info: rope scaling     = linear
+print_info: freq_base_train  = 500000.0
+print_info: freq_scale_train = 1
+print_info: n_ctx_orig_yarn  = 131072
+print_info: rope_finetuned   = unknown
+print_info: model type       = 3B
+print_info: model params     = 3.21 B
+print_info: general.name     = Llama 3.2 3B Instruct
+print_info: vocab type       = BPE
+print_info: n_vocab          = 128256
+print_info: n_merges         = 280147
+print_info: BOS token        = 128000 '<|begin_of_text|>'
+print_info: EOS token        = 128009 '<|eot_id|>'
+print_info: EOT token        = 128001 '<|end_of_text|>'
+print_info: EOM token        = 128008 '<|eom_id|>'
+print_info: LF token         = 198 'Ċ'
+print_info: EOG token        = 128001 '<|end_of_text|>'
+print_info: EOG token        = 128008 '<|eom_id|>'
+print_info: EOG token        = 128009 '<|eot_id|>'
+print_info: max token length = 256
+load_tensors: loading model tensors, this can take a while... (mmap = true)
+load_tensors: offloading 28 repeating layers to GPU
+load_tensors: offloading output layer to GPU
+load_tensors: offloaded 29/29 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =   308.23 MiB
+load_tensors: Metal_Mapped model buffer size =  1918.35 MiB
+llama_context: constructing llama_context
+llama_context: n_seq_max     = 1
+llama_context: n_ctx         = 4096
+llama_context: n_ctx_per_seq = 4096
+llama_context: n_batch       = 512
+llama_context: n_ubatch      = 512
+llama_context: causal_attn   = 1
+llama_context: flash_attn    = disabled
+llama_context: kv_unified    = false
+llama_context: freq_base     = 500000.0
+llama_context: freq_scale    = 1
+llama_context: n_ctx_per_seq (4096) < n_ctx_train (131072) -- the full capacity of the model will not be utilized
+ggml_metal_init: allocating
+ggml_metal_init: picking default device: Apple M2
+ggml_metal_init: use bfloat         = true
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+llama_context:        CPU  output buffer size =     0.50 MiB
+llama_kv_cache:      Metal KV buffer size =   448.00 MiB
+llama_kv_cache: size =  448.00 MiB (  4096 cells,  28 layers,  1/1 seqs), K (f16):  224.00 MiB, V (f16):  224.00 MiB
+llama_context:      Metal compute buffer size =   262.50 MiB
+llama_context:        CPU compute buffer size =    18.01 MiB
+llama_context: graph nodes  = 1014
+llama_context: graph splits = 2
+time=2026-02-10T15:12:38.421+09:00 level=INFO source=server.go:1332 msg="llama runner started in 3.15 seconds"
+time=2026-02-10T15:12:38.422+09:00 level=INFO source=sched.go:517 msg="loaded runners" count=1
+time=2026-02-10T15:12:38.422+09:00 level=INFO source=server.go:1294 msg="waiting for llama runner to start responding"
+time=2026-02-10T15:12:38.423+09:00 level=INFO source=server.go:1332 msg="llama runner started in 3.15 seconds"
+[GIN] 2026/02/10 - 15:12:40 | 200 |  6.535946958s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:12:41 | 200 |  549.137667ms |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:12:42 | 200 |   905.42275ms |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:12:46 | 200 |   4.38795225s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:12:50 | 200 |  3.375248792s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:12:53 | 200 |  3.753658125s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:12:54 | 200 |    1.0170385s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:13:00 | 200 |  5.991977917s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:13:03 | 200 |  2.235744917s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:13:06 | 200 |  3.062787166s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:15:40 | 200 |    2.668208ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 15:15:46 | 200 |    5.2476515s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:15:46 | 200 |      587.86ms |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:15:51 | 200 |  4.752333875s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:15:57 | 200 |  5.961445083s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:02 | 200 |  4.923885125s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:06 | 200 |  3.827587792s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:11 | 200 |  5.022408542s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:14 | 200 |  3.152356333s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:19 | 200 |  5.038882958s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:22 | 200 |   3.29529975s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:36 | 200 |    1.434542ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 15:16:42 | 200 |      5.10439s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:42 | 200 |  704.185625ms |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:47 | 200 |  4.771492292s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:51 | 200 |  4.069627042s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:16:56 | 200 |   4.95300575s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:17:10 | 200 |  13.77012575s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:17:15 | 200 |  5.290828208s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:17:16 | 200 |  964.935916ms |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:17:22 | 200 |  5.859488792s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:21:53 | 200 |     2.83275ms |       127.0.0.1 | GET      "/api/tags"
+time=2026-02-10T15:21:54.029+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8353 keep=5 new=4096
+[GIN] 2026/02/10 - 15:22:10 | 200 | 16.882629125s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:22:10.902+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8355 keep=5 new=4096
+[GIN] 2026/02/10 - 15:22:23 | 200 | 13.073516167s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:22:24.011+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8361 keep=5 new=4096
+[GIN] 2026/02/10 - 15:22:37 | 200 | 13.118339667s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:22:42 | 200 |  5.302974166s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:22:42.489+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8356 keep=5 new=4096
+[GIN] 2026/02/10 - 15:22:55 | 200 | 13.126694791s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:23:02 | 200 |  6.501573458s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:23:06 | 200 |    1.306792ms |       127.0.0.1 | GET      "/api/tags"
+time=2026-02-10T15:23:07.034+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8360 keep=5 new=4096
+[GIN] 2026/02/10 - 15:23:25 | 200 | 19.057802875s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:23:26.017+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8364 keep=5 new=4096
+[GIN] 2026/02/10 - 15:23:50 | 200 | 43.795830459s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:23:50.754+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8361 keep=5 new=4096
+[GIN] 2026/02/10 - 15:24:09 | 200 | 43.945993084s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:24:14.984+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8362 keep=5 new=4096
+[GIN] 2026/02/10 - 15:24:28 | 200 |    13.619847s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:24:30 | 200 |  1.961864542s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:24:30.588+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8360 keep=5 new=4096
+[GIN] 2026/02/10 - 15:24:52 | 200 | 21.864154291s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:24:52.498+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8361 keep=5 new=4096
+[GIN] 2026/02/10 - 15:25:05 | 200 | 13.296433083s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:25:08 | 200 |  2.674224167s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:27:37 | 200 |    2.734458ms |       127.0.0.1 | GET      "/api/tags"
+time=2026-02-10T15:27:37.899+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8367 keep=5 new=4096
+[GIN] 2026/02/10 - 15:28:00 | 200 | 22.639835125s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:28:02.583+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8365 keep=5 new=4096
+[GIN] 2026/02/10 - 15:28:35 | 200 |  33.15850575s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:28:37.821+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8365 keep=5 new=4096
+[GIN] 2026/02/10 - 15:28:55 | 200 | 17.877804542s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:28:57.761+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8376 keep=5 new=4096
+[GIN] 2026/02/10 - 15:29:40 | 200 | 42.389976958s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:29:42.248+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8375 keep=5 new=4096
+[GIN] 2026/02/10 - 15:30:14 | 200 | 32.128072333s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:30:16.424+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8369 keep=5 new=4096
+[GIN] 2026/02/10 - 15:30:43 | 200 | 26.935122583s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:30:45.443+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8366 keep=5 new=4096
+[GIN] 2026/02/10 - 15:31:08 | 200 | 23.325580625s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:31:10.788+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8372 keep=5 new=4096
+[GIN] 2026/02/10 - 15:32:02 | 200 | 51.510244083s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:33:43 | 200 |    2.738625ms |       127.0.0.1 | GET      "/api/tags"
+time=2026-02-10T15:33:43.772+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8367 keep=5 new=4096
+[GIN] 2026/02/10 - 15:34:05 | 200 | 22.232252292s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:34:07.992+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8365 keep=5 new=4096
+[GIN] 2026/02/10 - 15:34:42 | 200 | 34.283960875s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:34:57 | 200 |    3.347417ms |       127.0.0.1 | GET      "/api/tags"
+time=2026-02-10T15:34:57.773+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8367 keep=5 new=4096
+[GIN] 2026/02/10 - 15:35:19 | 200 | 21.894904542s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:35:21.699+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8365 keep=5 new=4096
+[GIN] 2026/02/10 - 15:35:55 | 200 |  34.03309825s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:36:47 | 200 |    2.914916ms |       127.0.0.1 | GET      "/api/tags"
+time=2026-02-10T15:36:48.118+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8367 keep=5 new=4096
+[GIN] 2026/02/10 - 15:37:09 | 200 | 21.827258583s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:37:12.024+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8365 keep=5 new=4096
+[GIN] 2026/02/10 - 15:37:45 | 200 | 33.378764792s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:37:47.413+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8365 keep=5 new=4096
+[GIN] 2026/02/10 - 15:38:05 | 200 | 17.792457708s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:38:07.244+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8376 keep=5 new=4096
+[GIN] 2026/02/10 - 15:38:48 | 200 | 41.487204792s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:38:50.754+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8375 keep=5 new=4096
+[GIN] 2026/02/10 - 15:39:22 | 200 | 31.644597375s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:39:24.417+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8369 keep=5 new=4096
+[GIN] 2026/02/10 - 15:39:50 | 200 | 26.205382416s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T15:39:52.667+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=8366 keep=5 new=4096
+[GIN] 2026/02/10 - 15:40:15 | 200 | 23.251120166s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 15:49:04 | 200 |     561.416µs |       127.0.0.1 | HEAD     "/"
+[GIN] 2026/02/10 - 15:49:04 | 200 |    2.380958ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 15:49:12 | 200 |      16.583µs |       127.0.0.1 | HEAD     "/"
+time=2026-02-10T15:49:13.849+09:00 level=INFO source=download.go:177 msg="downloading 60e05f210007 in 16 292 MB part(s)"
+time=2026-02-10T15:49:39.242+09:00 level=INFO source=download.go:295 msg="60e05f210007 part 4 attempt 0 failed: unexpected EOF, retrying in 1s"
+time=2026-02-10T16:05:03.375+09:00 level=INFO source=download.go:177 msg="downloading 66b9ea09bd5b in 1 68 B part(s)"
+time=2026-02-10T16:05:04.822+09:00 level=INFO source=download.go:177 msg="downloading 1e65450c3067 in 1 1.6 KB part(s)"
+time=2026-02-10T16:05:06.330+09:00 level=INFO source=download.go:177 msg="downloading 832dd9e00a68 in 1 11 KB part(s)"
+time=2026-02-10T16:05:08.040+09:00 level=INFO source=download.go:177 msg="downloading d9bb33f27869 in 1 487 B part(s)"
+[GIN] 2026/02/10 - 16:05:12 | 200 |        15m59s |       127.0.0.1 | POST     "/api/pull"
+[GIN] 2026/02/10 - 16:26:49 | 200 |    2.552708ms |       127.0.0.1 | GET      "/api/tags"
+llama_model_load_from_file_impl: using device Metal (Apple M2) (unknown id) - 10922 MiB free
+llama_model_loader: loaded meta data with 34 key-value pairs and 339 tensors from /Users/mk/.ollama/models/blobs/sha256-60e05f2100071479f596b964f89f510f057ce397ea22f2833a0cfe029bfc2463 (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen2
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = Qwen2.5 Coder 7B Instruct
+llama_model_loader: - kv   3:                           general.finetune str              = Instruct
+llama_model_loader: - kv   4:                           general.basename str              = Qwen2.5-Coder
+llama_model_loader: - kv   5:                         general.size_label str              = 7B
+llama_model_loader: - kv   6:                            general.license str              = apache-2.0
+llama_model_loader: - kv   7:                       general.license.link str              = https://huggingface.co/Qwen/Qwen2.5-C...
+llama_model_loader: - kv   8:                   general.base_model.count u32              = 1
+llama_model_loader: - kv   9:                  general.base_model.0.name str              = Qwen2.5 Coder 7B
+llama_model_loader: - kv  10:          general.base_model.0.organization str              = Qwen
+llama_model_loader: - kv  11:              general.base_model.0.repo_url str              = https://huggingface.co/Qwen/Qwen2.5-C...
+llama_model_loader: - kv  12:                               general.tags arr[str,6]       = ["code", "codeqwen", "chat", "qwen", ...
+llama_model_loader: - kv  13:                          general.languages arr[str,1]       = ["en"]
+llama_model_loader: - kv  14:                          qwen2.block_count u32              = 28
+llama_model_loader: - kv  15:                       qwen2.context_length u32              = 32768
+llama_model_loader: - kv  16:                     qwen2.embedding_length u32              = 3584
+llama_model_loader: - kv  17:                  qwen2.feed_forward_length u32              = 18944
+llama_model_loader: - kv  18:                 qwen2.attention.head_count u32              = 28
+llama_model_loader: - kv  19:              qwen2.attention.head_count_kv u32              = 4
+llama_model_loader: - kv  20:                       qwen2.rope.freq_base f32              = 1000000.000000
+llama_model_loader: - kv  21:     qwen2.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  22:                          general.file_type u32              = 15
+llama_model_loader: - kv  23:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  24:                         tokenizer.ggml.pre str              = qwen2
+llama_model_loader: - kv  25:                      tokenizer.ggml.tokens arr[str,152064]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+llama_model_loader: - kv  26:                  tokenizer.ggml.token_type arr[i32,152064]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  27:                      tokenizer.ggml.merges arr[str,151387]  = ["Ġ Ġ", "ĠĠ ĠĠ", "i n", "Ġ t",...
+llama_model_loader: - kv  28:                tokenizer.ggml.eos_token_id u32              = 151645
+llama_model_loader: - kv  29:            tokenizer.ggml.padding_token_id u32              = 151643
+llama_model_loader: - kv  30:                tokenizer.ggml.bos_token_id u32              = 151643
+llama_model_loader: - kv  31:               tokenizer.ggml.add_bos_token bool             = false
+llama_model_loader: - kv  32:                    tokenizer.chat_template str              = {%- if tools %}\n    {{- '<|im_start|>...
+llama_model_loader: - kv  33:               general.quantization_version u32              = 2
+llama_model_loader: - type  f32:  141 tensors
+llama_model_loader: - type q4_K:  169 tensors
+llama_model_loader: - type q6_K:   29 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = Q4_K - Medium
+print_info: file size   = 4.36 GiB (4.91 BPW) 
+load: printing all EOG tokens:
+load:   - 151643 ('<|endoftext|>')
+load:   - 151645 ('<|im_end|>')
+load:   - 151662 ('<|fim_pad|>')
+load:   - 151663 ('<|repo_name|>')
+load:   - 151664 ('<|file_sep|>')
+load: special tokens cache size = 22
+load: token to piece cache size = 0.9310 MB
+print_info: arch             = qwen2
+print_info: vocab_only       = 1
+print_info: model type       = ?B
+print_info: model params     = 7.62 B
+print_info: general.name     = Qwen2.5 Coder 7B Instruct
+print_info: vocab type       = BPE
+print_info: n_vocab          = 152064
+print_info: n_merges         = 151387
+print_info: BOS token        = 151643 '<|endoftext|>'
+print_info: EOS token        = 151645 '<|im_end|>'
+print_info: EOT token        = 151645 '<|im_end|>'
+print_info: PAD token        = 151643 '<|endoftext|>'
+print_info: LF token         = 198 'Ċ'
+print_info: FIM PRE token    = 151659 '<|fim_prefix|>'
+print_info: FIM SUF token    = 151661 '<|fim_suffix|>'
+print_info: FIM MID token    = 151660 '<|fim_middle|>'
+print_info: FIM PAD token    = 151662 '<|fim_pad|>'
+print_info: FIM REP token    = 151663 '<|repo_name|>'
+print_info: FIM SEP token    = 151664 '<|file_sep|>'
+print_info: EOG token        = 151643 '<|endoftext|>'
+print_info: EOG token        = 151645 '<|im_end|>'
+print_info: EOG token        = 151662 '<|fim_pad|>'
+print_info: EOG token        = 151663 '<|repo_name|>'
+print_info: EOG token        = 151664 '<|file_sep|>'
+print_info: max token length = 256
+llama_model_load: vocab only - skipping tensors
+time=2026-02-10T16:26:49.946+09:00 level=INFO source=server.go:392 msg="starting runner" cmd="/Applications/Ollama.app/Contents/Resources/ollama runner --model /Users/mk/.ollama/models/blobs/sha256-60e05f2100071479f596b964f89f510f057ce397ea22f2833a0cfe029bfc2463 --port 51801"
+time=2026-02-10T16:26:49.949+09:00 level=INFO source=sched.go:443 msg="system memory" total="16.0 GiB" free="2.7 GiB" free_swap="0 B"
+time=2026-02-10T16:26:49.949+09:00 level=INFO source=sched.go:450 msg="gpu memory" id=0 library=Metal available="10.2 GiB" free="10.7 GiB" minimum="512.0 MiB" overhead="0 B"
+time=2026-02-10T16:26:49.949+09:00 level=INFO source=server.go:459 msg="loading model" "model layers"=29 requested=-1
+time=2026-02-10T16:26:49.950+09:00 level=INFO source=device.go:240 msg="model weights" device=Metal size="4.1 GiB"
+time=2026-02-10T16:26:49.950+09:00 level=INFO source=device.go:251 msg="kv cache" device=Metal size="224.0 MiB"
+time=2026-02-10T16:26:49.950+09:00 level=INFO source=device.go:262 msg="compute graph" device=Metal size="304.0 MiB"
+time=2026-02-10T16:26:49.950+09:00 level=INFO source=device.go:272 msg="total memory" size="4.6 GiB"
+time=2026-02-10T16:26:49.991+09:00 level=INFO source=runner.go:963 msg="starting go runner"
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.024 sec
+ggml_metal_device_init: GPU name:   Apple M2
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple8  (1008)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal3  (5001)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: use residency sets    = true
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 11453.25 MB
+time=2026-02-10T16:26:49.994+09:00 level=INFO source=ggml.go:104 msg=system Metal.0.EMBED_LIBRARY=1 CPU.0.NEON=1 CPU.0.ARM_FMA=1 CPU.0.FP16_VA=1 CPU.0.DOTPROD=1 CPU.0.LLAMAFILE=1 CPU.0.ACCELERATE=1 compiler=cgo(clang)
+time=2026-02-10T16:26:50.079+09:00 level=INFO source=runner.go:999 msg="Server listening on 127.0.0.1:51801"
+time=2026-02-10T16:26:50.083+09:00 level=INFO source=runner.go:893 msg=load request="{Operation:commit LoraPath:[] Parallel:1 BatchSize:512 FlashAttention:false KvSize:4096 KvCacheType: NumThreads:4 GPULayers:29[ID:0 Layers:29(0..28)] MultiUserCache:false ProjectorPath: MainGPU:0 UseMmap:true}"
+time=2026-02-10T16:26:50.084+09:00 level=INFO source=server.go:1294 msg="waiting for llama runner to start responding"
+llama_model_load_from_file_impl: using device Metal (Apple M2) (unknown id) - 10922 MiB free
+time=2026-02-10T16:26:50.084+09:00 level=INFO source=server.go:1328 msg="waiting for server to become available" status="llm server loading model"
+llama_model_loader: loaded meta data with 34 key-value pairs and 339 tensors from /Users/mk/.ollama/models/blobs/sha256-60e05f2100071479f596b964f89f510f057ce397ea22f2833a0cfe029bfc2463 (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen2
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = Qwen2.5 Coder 7B Instruct
+llama_model_loader: - kv   3:                           general.finetune str              = Instruct
+llama_model_loader: - kv   4:                           general.basename str              = Qwen2.5-Coder
+llama_model_loader: - kv   5:                         general.size_label str              = 7B
+llama_model_loader: - kv   6:                            general.license str              = apache-2.0
+llama_model_loader: - kv   7:                       general.license.link str              = https://huggingface.co/Qwen/Qwen2.5-C...
+llama_model_loader: - kv   8:                   general.base_model.count u32              = 1
+llama_model_loader: - kv   9:                  general.base_model.0.name str              = Qwen2.5 Coder 7B
+llama_model_loader: - kv  10:          general.base_model.0.organization str              = Qwen
+llama_model_loader: - kv  11:              general.base_model.0.repo_url str              = https://huggingface.co/Qwen/Qwen2.5-C...
+llama_model_loader: - kv  12:                               general.tags arr[str,6]       = ["code", "codeqwen", "chat", "qwen", ...
+llama_model_loader: - kv  13:                          general.languages arr[str,1]       = ["en"]
+llama_model_loader: - kv  14:                          qwen2.block_count u32              = 28
+llama_model_loader: - kv  15:                       qwen2.context_length u32              = 32768
+llama_model_loader: - kv  16:                     qwen2.embedding_length u32              = 3584
+llama_model_loader: - kv  17:                  qwen2.feed_forward_length u32              = 18944
+llama_model_loader: - kv  18:                 qwen2.attention.head_count u32              = 28
+llama_model_loader: - kv  19:              qwen2.attention.head_count_kv u32              = 4
+llama_model_loader: - kv  20:                       qwen2.rope.freq_base f32              = 1000000.000000
+llama_model_loader: - kv  21:     qwen2.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  22:                          general.file_type u32              = 15
+llama_model_loader: - kv  23:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  24:                         tokenizer.ggml.pre str              = qwen2
+llama_model_loader: - kv  25:                      tokenizer.ggml.tokens arr[str,152064]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+llama_model_loader: - kv  26:                  tokenizer.ggml.token_type arr[i32,152064]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  27:                      tokenizer.ggml.merges arr[str,151387]  = ["Ġ Ġ", "ĠĠ ĠĠ", "i n", "Ġ t",...
+llama_model_loader: - kv  28:                tokenizer.ggml.eos_token_id u32              = 151645
+llama_model_loader: - kv  29:            tokenizer.ggml.padding_token_id u32              = 151643
+llama_model_loader: - kv  30:                tokenizer.ggml.bos_token_id u32              = 151643
+llama_model_loader: - kv  31:               tokenizer.ggml.add_bos_token bool             = false
+llama_model_loader: - kv  32:                    tokenizer.chat_template str              = {%- if tools %}\n    {{- '<|im_start|>...
+llama_model_loader: - kv  33:               general.quantization_version u32              = 2
+llama_model_loader: - type  f32:  141 tensors
+llama_model_loader: - type q4_K:  169 tensors
+llama_model_loader: - type q6_K:   29 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = Q4_K - Medium
+print_info: file size   = 4.36 GiB (4.91 BPW) 
+load: printing all EOG tokens:
+load:   - 151643 ('<|endoftext|>')
+load:   - 151645 ('<|im_end|>')
+load:   - 151662 ('<|fim_pad|>')
+load:   - 151663 ('<|repo_name|>')
+load:   - 151664 ('<|file_sep|>')
+load: special tokens cache size = 22
+load: token to piece cache size = 0.9310 MB
+print_info: arch             = qwen2
+print_info: vocab_only       = 0
+print_info: n_ctx_train      = 32768
+print_info: n_embd           = 3584
+print_info: n_layer          = 28
+print_info: n_head           = 28
+print_info: n_head_kv        = 4
+print_info: n_rot            = 128
+print_info: n_swa            = 0
+print_info: is_swa_any       = 0
+print_info: n_embd_head_k    = 128
+print_info: n_embd_head_v    = 128
+print_info: n_gqa            = 7
+print_info: n_embd_k_gqa     = 512
+print_info: n_embd_v_gqa     = 512
+print_info: f_norm_eps       = 0.0e+00
+print_info: f_norm_rms_eps   = 1.0e-06
+print_info: f_clamp_kqv      = 0.0e+00
+print_info: f_max_alibi_bias = 0.0e+00
+print_info: f_logit_scale    = 0.0e+00
+print_info: f_attn_scale     = 0.0e+00
+print_info: n_ff             = 18944
+print_info: n_expert         = 0
+print_info: n_expert_used    = 0
+print_info: causal attn      = 1
+print_info: pooling type     = -1
+print_info: rope type        = 2
+print_info: rope scaling     = linear
+print_info: freq_base_train  = 1000000.0
+print_info: freq_scale_train = 1
+print_info: n_ctx_orig_yarn  = 32768
+print_info: rope_finetuned   = unknown
+print_info: model type       = 7B
+print_info: model params     = 7.62 B
+print_info: general.name     = Qwen2.5 Coder 7B Instruct
+print_info: vocab type       = BPE
+print_info: n_vocab          = 152064
+print_info: n_merges         = 151387
+print_info: BOS token        = 151643 '<|endoftext|>'
+print_info: EOS token        = 151645 '<|im_end|>'
+print_info: EOT token        = 151645 '<|im_end|>'
+print_info: PAD token        = 151643 '<|endoftext|>'
+print_info: LF token         = 198 'Ċ'
+print_info: FIM PRE token    = 151659 '<|fim_prefix|>'
+print_info: FIM SUF token    = 151661 '<|fim_suffix|>'
+print_info: FIM MID token    = 151660 '<|fim_middle|>'
+print_info: FIM PAD token    = 151662 '<|fim_pad|>'
+print_info: FIM REP token    = 151663 '<|repo_name|>'
+print_info: FIM SEP token    = 151664 '<|file_sep|>'
+print_info: EOG token        = 151643 '<|endoftext|>'
+print_info: EOG token        = 151645 '<|im_end|>'
+print_info: EOG token        = 151662 '<|fim_pad|>'
+print_info: EOG token        = 151663 '<|repo_name|>'
+print_info: EOG token        = 151664 '<|file_sep|>'
+print_info: max token length = 256
+load_tensors: loading model tensors, this can take a while... (mmap = true)
+load_tensors: offloading 28 repeating layers to GPU
+load_tensors: offloading output layer to GPU
+load_tensors: offloaded 29/29 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =   292.36 MiB
+load_tensors: Metal_Mapped model buffer size =  4168.09 MiB
+llama_context: constructing llama_context
+llama_context: n_seq_max     = 1
+llama_context: n_ctx         = 4096
+llama_context: n_ctx_per_seq = 4096
+llama_context: n_batch       = 512
+llama_context: n_ubatch      = 512
+llama_context: causal_attn   = 1
+llama_context: flash_attn    = disabled
+llama_context: kv_unified    = false
+llama_context: freq_base     = 1000000.0
+llama_context: freq_scale    = 1
+llama_context: n_ctx_per_seq (4096) < n_ctx_train (32768) -- the full capacity of the model will not be utilized
+ggml_metal_init: allocating
+ggml_metal_init: picking default device: Apple M2
+ggml_metal_init: use bfloat         = true
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+llama_context:        CPU  output buffer size =     0.59 MiB
+llama_kv_cache:      Metal KV buffer size =   224.00 MiB
+llama_kv_cache: size =  224.00 MiB (  4096 cells,  28 layers,  1/1 seqs), K (f16):  112.00 MiB, V (f16):  112.00 MiB
+llama_context:      Metal compute buffer size =   311.00 MiB
+llama_context:        CPU compute buffer size =    17.01 MiB
+llama_context: graph nodes  = 1098
+llama_context: graph splits = 2
+time=2026-02-10T16:26:54.355+09:00 level=INFO source=server.go:1332 msg="llama runner started in 4.41 seconds"
+time=2026-02-10T16:26:54.355+09:00 level=INFO source=sched.go:517 msg="loaded runners" count=1
+time=2026-02-10T16:26:54.355+09:00 level=INFO source=server.go:1294 msg="waiting for llama runner to start responding"
+time=2026-02-10T16:26:54.356+09:00 level=INFO source=server.go:1332 msg="llama runner started in 4.41 seconds"
+[GIN] 2026/02/10 - 16:27:15 | 200 | 26.703402584s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:27:20 | 200 |  2.618976333s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:27:24 | 200 |   2.33337275s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:27:31 | 200 |  4.693171542s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:27:36 | 200 |  3.005447625s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:27:42 | 200 |  3.604702125s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:27:46 | 200 |   2.62858175s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:27:51 | 200 |  2.945830125s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:27:56 | 200 |  2.920278292s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:28:01 | 200 |  2.791815875s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:28:06 | 200 |  3.410345584s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:28:11 | 200 |  2.889395625s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:28:19 | 200 |  5.391452333s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:30:18 | 200 |    6.718875ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:30:22 | 200 |  4.005875333s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T16:30:22.852+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=5799 keep=4 new=4096
+[GIN] 2026/02/10 - 16:30:49 | 200 | 26.538731084s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:31:09 | 200 | 18.063991083s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:31:12 | 200 |  3.243592791s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:31:16 | 200 |   3.94229375s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:32:04 | 200 | 47.724974042s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:32:06 | 200 |   13.2123855s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T16:32:07.096+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=12786 keep=4 new=4096
+[GIN] 2026/02/10 - 16:33:06 | 500 |          1m0s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:33:18 | 200 |     550.208µs |       127.0.0.1 | HEAD     "/"
+[GIN] 2026/02/10 - 16:33:18 | 200 |    2.112875ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:33:26 | 200 |  31.27165025s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:33:38 | 500 |  12.41789475s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:33:46 | 200 |    2.157584ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:33:47 | 200 |         698µs |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:33:50 | 200 |  3.264016958s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T16:33:50.694+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=5799 keep=4 new=4096
+[GIN] 2026/02/10 - 16:34:16 | 200 | 26.167418625s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:34:36 | 200 | 18.079285292s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:34:40 | 200 |  4.052477875s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:34:44 | 200 |  4.218513084s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:35:15 | 500 | 30.270754333s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:35:22 | 200 |    3.665708ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:35:23 | 200 |     648.125µs |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:35:43 | 200 | 19.715568583s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:35:45 | 200 |  2.435174959s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:35:47 | 200 |   2.41741225s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:35:50 | 200 |  2.463553333s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:35:52 | 200 |   2.49205525s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:35:58 | 200 |  3.128456209s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:00 | 200 |   2.75252175s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:03 | 200 |  2.464079125s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:05 | 200 |  2.465388167s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:08 | 200 |     2.444017s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:13 | 200 |  2.737926583s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:15 | 200 |  2.486501667s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:18 | 200 |  2.537246166s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:20 | 200 |  2.392926834s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:22 | 200 |  2.484169917s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:27 | 200 |  2.837199375s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:30 | 200 |      2.52893s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:32 | 200 |  2.367783125s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:35 | 200 |  2.348116291s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:37 | 200 |  2.436695417s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:43 | 200 |  4.400872875s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:46 | 200 |  2.760925041s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:49 | 200 |  2.887529583s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:52 | 200 |  2.795060583s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:36:55 | 200 |  2.839868292s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:07 | 500 |   2.62335975s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:13 | 200 |    6.433208ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:37:13 | 200 |     867.625µs |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:37:17 | 200 |  3.546221916s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:19 | 200 |  2.456778292s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:22 | 200 |  2.427223125s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:24 | 200 |     2.383407s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:26 | 200 |  2.389630709s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:31 | 200 |  2.650073292s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:33 | 200 |  2.400247792s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:36 | 200 |  2.483018084s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:39 | 200 |  3.213044541s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:42 | 200 |  2.614638083s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:46 | 200 |  2.676845416s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:49 | 200 |  2.462755208s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:51 | 200 |  2.436717375s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:54 | 200 |  2.534926791s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:37:56 | 200 |  2.468538709s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:38:01 | 200 |  2.720317375s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:38:03 | 200 |  2.361157584s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:38:05 | 500 |     1.919348s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:38:33 | 200 |    2.396167ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:38:34 | 200 |     647.208µs |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:38:54 | 200 | 19.934469709s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T16:38:55.265+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=5877 keep=4 new=4096
+[GIN] 2026/02/10 - 16:39:20 | 200 | 25.797750958s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:39:41 | 200 | 19.155522667s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:39:45 | 200 |  3.156682042s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:39:49 | 200 |  2.021003625s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T16:39:49.717+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=12865 keep=4 new=4096
+[GIN] 2026/02/10 - 16:40:05 | 500 | 15.970571708s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:40:12 | 200 |    2.231625ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:40:12 | 200 |     453.792µs |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:40:32 | 200 | 19.717973792s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T16:40:32.404+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=5880 keep=4 new=4096
+[GIN] 2026/02/10 - 16:40:58 | 200 | 26.165629125s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:41:19 | 200 |    18.915472s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:41:22 | 200 |  3.225554625s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:41:26 | 200 |  2.013098458s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T16:41:27.108+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=12867 keep=4 new=4096
+[GIN] 2026/02/10 - 16:41:46 | 500 |    19.959555s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:42:12 | 200 |   11.032542ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:42:13 | 200 |    2.345417ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:42:33 | 200 | 19.932170625s |       127.0.0.1 | POST     "/api/chat"
+time=2026-02-10T16:42:33.915+09:00 level=WARN source=runner.go:152 msg="truncating input prompt" limit=4096 prompt=5880 keep=4 new=4096
+[GIN] 2026/02/10 - 16:42:59 | 200 | 26.362603417s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:43:21 | 200 | 19.342545083s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:43:22 | 500 |     1.202149s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:43:29 | 200 |    2.497708ms |       127.0.0.1 | GET      "/api/tags"
+[GIN] 2026/02/10 - 16:43:30 | 200 |     572.584µs |       127.0.0.1 | GET      "/api/tags"
+time=2026-02-10T16:43:30.664+09:00 level=INFO source=sched.go:583 msg="updated VRAM based on existing loaded models" gpu=0 library=Metal total="10.7 GiB" available="6.1 GiB"
+llama_model_load_from_file_impl: using device Metal (Apple M2) (unknown id) - 10922 MiB free
+llama_model_loader: loaded meta data with 30 key-value pairs and 255 tensors from /Users/mk/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = llama
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = Llama 3.2 3B Instruct
+llama_model_loader: - kv   3:                           general.finetune str              = Instruct
+llama_model_loader: - kv   4:                           general.basename str              = Llama-3.2
+llama_model_loader: - kv   5:                         general.size_label str              = 3B
+llama_model_loader: - kv   6:                               general.tags arr[str,6]       = ["facebook", "meta", "pytorch", "llam...
+llama_model_loader: - kv   7:                          general.languages arr[str,8]       = ["en", "de", "fr", "it", "pt", "hi", ...
+llama_model_loader: - kv   8:                          llama.block_count u32              = 28
+llama_model_loader: - kv   9:                       llama.context_length u32              = 131072
+llama_model_loader: - kv  10:                     llama.embedding_length u32              = 3072
+llama_model_loader: - kv  11:                  llama.feed_forward_length u32              = 8192
+llama_model_loader: - kv  12:                 llama.attention.head_count u32              = 24
+llama_model_loader: - kv  13:              llama.attention.head_count_kv u32              = 8
+llama_model_loader: - kv  14:                       llama.rope.freq_base f32              = 500000.000000
+llama_model_loader: - kv  15:     llama.attention.layer_norm_rms_epsilon f32              = 0.000010
+llama_model_loader: - kv  16:                 llama.attention.key_length u32              = 128
+llama_model_loader: - kv  17:               llama.attention.value_length u32              = 128
+llama_model_loader: - kv  18:                          general.file_type u32              = 15
+llama_model_loader: - kv  19:                           llama.vocab_size u32              = 128256
+llama_model_loader: - kv  20:                 llama.rope.dimension_count u32              = 128
+llama_model_loader: - kv  21:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  22:                         tokenizer.ggml.pre str              = llama-bpe
+llama_model_loader: - kv  23:                      tokenizer.ggml.tokens arr[str,128256]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+llama_model_loader: - kv  24:                  tokenizer.ggml.token_type arr[i32,128256]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  25:                      tokenizer.ggml.merges arr[str,280147]  = ["Ġ Ġ", "Ġ ĠĠĠ", "ĠĠ ĠĠ", "...
+llama_model_loader: - kv  26:                tokenizer.ggml.bos_token_id u32              = 128000
+llama_model_loader: - kv  27:                tokenizer.ggml.eos_token_id u32              = 128009
+llama_model_loader: - kv  28:                    tokenizer.chat_template str              = {{- bos_token }}\n{%- if custom_tools ...
+llama_model_loader: - kv  29:               general.quantization_version u32              = 2
+llama_model_loader: - type  f32:   58 tensors
+llama_model_loader: - type q4_K:  168 tensors
+llama_model_loader: - type q6_K:   29 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = Q4_K - Medium
+print_info: file size   = 1.87 GiB (5.01 BPW) 
+load: printing all EOG tokens:
+load:   - 128001 ('<|end_of_text|>')
+load:   - 128008 ('<|eom_id|>')
+load:   - 128009 ('<|eot_id|>')
+load: special tokens cache size = 256
+load: token to piece cache size = 0.7999 MB
+print_info: arch             = llama
+print_info: vocab_only       = 1
+print_info: model type       = ?B
+print_info: model params     = 3.21 B
+print_info: general.name     = Llama 3.2 3B Instruct
+print_info: vocab type       = BPE
+print_info: n_vocab          = 128256
+print_info: n_merges         = 280147
+print_info: BOS token        = 128000 '<|begin_of_text|>'
+print_info: EOS token        = 128009 '<|eot_id|>'
+print_info: EOT token        = 128001 '<|end_of_text|>'
+print_info: EOM token        = 128008 '<|eom_id|>'
+print_info: LF token         = 198 'Ċ'
+print_info: EOG token        = 128001 '<|end_of_text|>'
+print_info: EOG token        = 128008 '<|eom_id|>'
+print_info: EOG token        = 128009 '<|eot_id|>'
+print_info: max token length = 256
+llama_model_load: vocab only - skipping tensors
+time=2026-02-10T16:43:31.546+09:00 level=INFO source=server.go:392 msg="starting runner" cmd="/Applications/Ollama.app/Contents/Resources/ollama runner --model /Users/mk/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff --port 52792"
+time=2026-02-10T16:43:31.551+09:00 level=INFO source=sched.go:443 msg="system memory" total="16.0 GiB" free="4.1 GiB" free_swap="0 B"
+time=2026-02-10T16:43:31.551+09:00 level=INFO source=sched.go:450 msg="gpu memory" id=0 library=Metal available="5.6 GiB" free="6.1 GiB" minimum="512.0 MiB" overhead="0 B"
+time=2026-02-10T16:43:31.551+09:00 level=INFO source=server.go:459 msg="loading model" "model layers"=29 requested=-1
+time=2026-02-10T16:43:31.551+09:00 level=INFO source=device.go:240 msg="model weights" device=Metal size="1.9 GiB"
+time=2026-02-10T16:43:31.552+09:00 level=INFO source=device.go:251 msg="kv cache" device=Metal size="448.0 MiB"
+time=2026-02-10T16:43:31.552+09:00 level=INFO source=device.go:262 msg="compute graph" device=Metal size="256.5 MiB"
+time=2026-02-10T16:43:31.552+09:00 level=INFO source=device.go:272 msg="total memory" size="2.6 GiB"
+time=2026-02-10T16:43:31.618+09:00 level=INFO source=runner.go:963 msg="starting go runner"
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 8.126 sec
+ggml_metal_device_init: GPU name:   Apple M2
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple8  (1008)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal3  (5001)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: use residency sets    = true
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 11453.25 MB
+time=2026-02-10T16:43:31.621+09:00 level=INFO source=ggml.go:104 msg=system Metal.0.EMBED_LIBRARY=1 CPU.0.NEON=1 CPU.0.ARM_FMA=1 CPU.0.FP16_VA=1 CPU.0.DOTPROD=1 CPU.0.LLAMAFILE=1 CPU.0.ACCELERATE=1 compiler=cgo(clang)
+time=2026-02-10T16:43:39.840+09:00 level=INFO source=runner.go:999 msg="Server listening on 127.0.0.1:52792"
+time=2026-02-10T16:43:39.846+09:00 level=INFO source=runner.go:893 msg=load request="{Operation:commit LoraPath:[] Parallel:1 BatchSize:512 FlashAttention:false KvSize:4096 KvCacheType: NumThreads:4 GPULayers:29[ID:0 Layers:29(0..28)] MultiUserCache:false ProjectorPath: MainGPU:0 UseMmap:true}"
+llama_model_load_from_file_impl: using device Metal (Apple M2) (unknown id) - 10922 MiB free
+time=2026-02-10T16:43:39.846+09:00 level=INFO source=server.go:1294 msg="waiting for llama runner to start responding"
+time=2026-02-10T16:43:39.846+09:00 level=INFO source=server.go:1328 msg="waiting for server to become available" status="llm server loading model"
+llama_model_loader: loaded meta data with 30 key-value pairs and 255 tensors from /Users/mk/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = llama
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = Llama 3.2 3B Instruct
+llama_model_loader: - kv   3:                           general.finetune str              = Instruct
+llama_model_loader: - kv   4:                           general.basename str              = Llama-3.2
+llama_model_loader: - kv   5:                         general.size_label str              = 3B
+llama_model_loader: - kv   6:                               general.tags arr[str,6]       = ["facebook", "meta", "pytorch", "llam...
+llama_model_loader: - kv   7:                          general.languages arr[str,8]       = ["en", "de", "fr", "it", "pt", "hi", ...
+llama_model_loader: - kv   8:                          llama.block_count u32              = 28
+llama_model_loader: - kv   9:                       llama.context_length u32              = 131072
+llama_model_loader: - kv  10:                     llama.embedding_length u32              = 3072
+llama_model_loader: - kv  11:                  llama.feed_forward_length u32              = 8192
+llama_model_loader: - kv  12:                 llama.attention.head_count u32              = 24
+llama_model_loader: - kv  13:              llama.attention.head_count_kv u32              = 8
+llama_model_loader: - kv  14:                       llama.rope.freq_base f32              = 500000.000000
+llama_model_loader: - kv  15:     llama.attention.layer_norm_rms_epsilon f32              = 0.000010
+llama_model_loader: - kv  16:                 llama.attention.key_length u32              = 128
+llama_model_loader: - kv  17:               llama.attention.value_length u32              = 128
+llama_model_loader: - kv  18:                          general.file_type u32              = 15
+llama_model_loader: - kv  19:                           llama.vocab_size u32              = 128256
+llama_model_loader: - kv  20:                 llama.rope.dimension_count u32              = 128
+llama_model_loader: - kv  21:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  22:                         tokenizer.ggml.pre str              = llama-bpe
+llama_model_loader: - kv  23:                      tokenizer.ggml.tokens arr[str,128256]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+llama_model_loader: - kv  24:                  tokenizer.ggml.token_type arr[i32,128256]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  25:                      tokenizer.ggml.merges arr[str,280147]  = ["Ġ Ġ", "Ġ ĠĠĠ", "ĠĠ ĠĠ", "...
+llama_model_loader: - kv  26:                tokenizer.ggml.bos_token_id u32              = 128000
+llama_model_loader: - kv  27:                tokenizer.ggml.eos_token_id u32              = 128009
+llama_model_loader: - kv  28:                    tokenizer.chat_template str              = {{- bos_token }}\n{%- if custom_tools ...
+llama_model_loader: - kv  29:               general.quantization_version u32              = 2
+llama_model_loader: - type  f32:   58 tensors
+llama_model_loader: - type q4_K:  168 tensors
+llama_model_loader: - type q6_K:   29 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = Q4_K - Medium
+print_info: file size   = 1.87 GiB (5.01 BPW) 
+load: printing all EOG tokens:
+load:   - 128001 ('<|end_of_text|>')
+load:   - 128008 ('<|eom_id|>')
+load:   - 128009 ('<|eot_id|>')
+load: special tokens cache size = 256
+load: token to piece cache size = 0.7999 MB
+print_info: arch             = llama
+print_info: vocab_only       = 0
+print_info: n_ctx_train      = 131072
+print_info: n_embd           = 3072
+print_info: n_layer          = 28
+print_info: n_head           = 24
+print_info: n_head_kv        = 8
+print_info: n_rot            = 128
+print_info: n_swa            = 0
+print_info: is_swa_any       = 0
+print_info: n_embd_head_k    = 128
+print_info: n_embd_head_v    = 128
+print_info: n_gqa            = 3
+print_info: n_embd_k_gqa     = 1024
+print_info: n_embd_v_gqa     = 1024
+print_info: f_norm_eps       = 0.0e+00
+print_info: f_norm_rms_eps   = 1.0e-05
+print_info: f_clamp_kqv      = 0.0e+00
+print_info: f_max_alibi_bias = 0.0e+00
+print_info: f_logit_scale    = 0.0e+00
+print_info: f_attn_scale     = 0.0e+00
+print_info: n_ff             = 8192
+print_info: n_expert         = 0
+print_info: n_expert_used    = 0
+print_info: causal attn      = 1
+print_info: pooling type     = 0
+print_info: rope type        = 0
+print_info: rope scaling     = linear
+print_info: freq_base_train  = 500000.0
+print_info: freq_scale_train = 1
+print_info: n_ctx_orig_yarn  = 131072
+print_info: rope_finetuned   = unknown
+print_info: model type       = 3B
+print_info: model params     = 3.21 B
+print_info: general.name     = Llama 3.2 3B Instruct
+print_info: vocab type       = BPE
+print_info: n_vocab          = 128256
+print_info: n_merges         = 280147
+print_info: BOS token        = 128000 '<|begin_of_text|>'
+print_info: EOS token        = 128009 '<|eot_id|>'
+print_info: EOT token        = 128001 '<|end_of_text|>'
+print_info: EOM token        = 128008 '<|eom_id|>'
+print_info: LF token         = 198 'Ċ'
+print_info: EOG token        = 128001 '<|end_of_text|>'
+print_info: EOG token        = 128008 '<|eom_id|>'
+print_info: EOG token        = 128009 '<|eot_id|>'
+print_info: max token length = 256
+load_tensors: loading model tensors, this can take a while... (mmap = true)
+load_tensors: offloading 28 repeating layers to GPU
+load_tensors: offloading output layer to GPU
+load_tensors: offloaded 29/29 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =   308.23 MiB
+load_tensors: Metal_Mapped model buffer size =  1918.35 MiB
+llama_context: constructing llama_context
+llama_context: n_seq_max     = 1
+llama_context: n_ctx         = 4096
+llama_context: n_ctx_per_seq = 4096
+llama_context: n_batch       = 512
+llama_context: n_ubatch      = 512
+llama_context: causal_attn   = 1
+llama_context: flash_attn    = disabled
+llama_context: kv_unified    = false
+llama_context: freq_base     = 500000.0
+llama_context: freq_scale    = 1
+llama_context: n_ctx_per_seq (4096) < n_ctx_train (131072) -- the full capacity of the model will not be utilized
+ggml_metal_init: allocating
+ggml_metal_init: picking default device: Apple M2
+ggml_metal_init: use bfloat         = true
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+llama_context:        CPU  output buffer size =     0.50 MiB
+llama_kv_cache:      Metal KV buffer size =   448.00 MiB
+llama_kv_cache: size =  448.00 MiB (  4096 cells,  28 layers,  1/1 seqs), K (f16):  224.00 MiB, V (f16):  224.00 MiB
+llama_context:      Metal compute buffer size =   262.50 MiB
+llama_context:        CPU compute buffer size =    18.01 MiB
+llama_context: graph nodes  = 1014
+llama_context: graph splits = 2
+time=2026-02-10T16:43:42.107+09:00 level=INFO source=server.go:1332 msg="llama runner started in 10.56 seconds"
+time=2026-02-10T16:43:42.107+09:00 level=INFO source=sched.go:517 msg="loaded runners" count=2
+time=2026-02-10T16:43:42.107+09:00 level=INFO source=server.go:1294 msg="waiting for llama runner to start responding"
+time=2026-02-10T16:43:42.109+09:00 level=INFO source=server.go:1332 msg="llama runner started in 10.56 seconds"
+[GIN] 2026/02/10 - 16:43:58 | 200 | 27.668343292s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:44:15 | 200 |    15.422542s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:44:24 | 200 |  6.787768667s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:45:17 | 200 |   51.0023025s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:45:23 | 200 |  6.043800416s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:45:34 | 200 |  9.212804709s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:45:49 | 200 | 14.150254958s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:46:17 | 200 | 26.916502791s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:46:31 | 200 | 11.240970708s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:46:40 | 200 |  6.946058541s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:46:53 | 200 | 11.014834167s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:47:08 | 200 | 13.554615291s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:47:13 | 200 |  3.082163125s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:47:17 | 200 |   3.12067525s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:47:34 | 200 | 14.987378625s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:47:41 | 200 |  7.449196667s |       127.0.0.1 | POST     "/api/chat"
+[GIN] 2026/02/10 - 16:48:43 | 500 |          1m0s |       127.0.0.1 | POST     "/api/chat"

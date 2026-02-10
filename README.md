@@ -21,7 +21,7 @@ cp .env.example .env
 cp frontend/.env.example frontend/.env.local
 ```
 
-### 2. Install Ollama and Pull a Model
+### 2. Install Ollama and Tool Model
 
 ```bash
 # Install Ollama (macOS)
@@ -30,10 +30,8 @@ brew install ollama
 # Start Ollama service
 ollama serve
 
-# Pull a model (in another terminal)
-ollama pull llama2
-# Or use mistral for better performance
-# ollama pull mistral
+# Pull Llama 3.2 (Recommended for tool use)
+ollama pull llama3.2
 ```
 
 ### 3. Start Backend
@@ -86,14 +84,21 @@ flowchart TB
     end
     
     subgraph Core["🧠 Core Layer"]
-        Router["Request Router"]
-        Provider["LLM Provider<br/>Abstraction"]
-        ConvMgr["Conversation<br/>Manager"]
+        Router["Multi-Turn Request Router"]
+        Provider["LLM Provider (Ollama)"]
+        Registry["Tool Registry"]
+        MCPClient["MCP Client Layer"]
+    end
+    
+    subgraph Tools["🛠️ Tool Layer (MCP)"]
+        FS["Filesystem Server"]
+        Git["Git Server"]
+        Fetch["Fetch/Web Server"]
     end
     
     subgraph LLM["🤖 LLM Layer"]
         Ollama["Ollama Server<br/>localhost:11434"]
-        Model["Gemma 3:4b<br/>Local Model"]
+        Model["Llama 3.2:3b<br/>Tool-Capable Model"]
     end
     
     Browser --> UI
@@ -101,92 +106,92 @@ flowchart TB
     UI -.->|WebSocket| WS
     REST --> Router
     WS --> Router
-    Health --> FastAPI
     Router --> Provider
-    Router --> ConvMgr
+    Router --> Registry
     Provider --> Ollama
     Ollama --> Model
+    Registry --> MCPClient
+    MCPClient --> FS
+    MCPClient --> Git
+    MCPClient --> Fetch
 ```
 
-### Request Flow
+### Request Flow (with Multi-Turn Tools)
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant F as Frontend
-    participant B as Backend
-    participant O as Ollama
-    participant M as Model
+    participant B as Backend (FastAPI)
+    participant L as LLM (Ollama)
+    participant T as MCP Tools
     
-    U->>F: Type message
-    F->>B: POST /api/chat
-    B->>B: Add to conversation
-    B->>O: POST /api/chat
-    O->>M: Inference
-    M-->>O: Generated text
-    O-->>B: Response
-    B-->>F: ChatResponse JSON
-    F-->>U: Display message
+    U->>B: POST /api/chat (query)
+    loop Tool Interaction (Max 5 turns)
+        B->>L: Call LLM with History + Tools
+        L-->>B: Assistant Response (Tool Call or Content)
+        alt is Tool Call
+            B->>T: Execute Tool (e.g., read_file)
+            T-->>B: Tool Result
+            B->>B: Add Tool Result to History
+        else is Final Content
+            B->>B: Final Answer Ready
+        end
+    end
+    B-->>U: Final ChatResponse JSON
 ```
 
 ### Chat State Flow
-
-When a user initiates a chat, here's the complete state flow:
 
 ```mermaid
 stateDiagram-v2
     [*] --> Idle: Page Load
     
-    Idle --> Composing: User starts typing
-    Composing --> Idle: Clear input
+    Idle --> Composing: User types
     Composing --> Sending: Press Enter
     
-    Sending --> Processing: Message sent to API
-    Processing --> Streaming: Receiving tokens
-    Streaming --> Complete: done=true received
+    Sending --> Processing: API Request
+    Processing --> ExecutingTool: LLM requests tool
+    ExecutingTool --> Processing: Tool result returned
     
-    Complete --> Idle: Ready for next message
+    Processing --> Streaming: Receiving text
+    Streaming --> Complete: done=true
     
-    Processing --> Error: API failure
-    Error --> Idle: Show error message
+    Complete --> Idle
+    Error --> Idle
 ```
 
 #### Step-by-Step Flow
 
-| Step | Component | Action | State Change |
-|------|-----------|--------|--------------|
-| 1 | **Frontend** | User types in input field | `Idle` → `Composing` |
-| 2 | **Frontend** | User presses Enter | `Composing` → `Sending` |
-| 3 | **Frontend** | Add user message to UI | Display immediately |
-| 4 | **Frontend** | Send POST to `/api/chat` | `Sending` → `Processing` |
-| 5 | **Backend** | Receive ChatRequest | Validate with Pydantic |
-| 6 | **Backend** | Get/create conversation ID | In-memory store lookup |
-| 7 | **Backend** | Append message to history | Update `_conversations` dict |
-| 8 | **Backend** | Call LLM provider | `provider.complete()` |
-| 9 | **Ollama** | Process with Gemma 3 | ~2-5 second inference |
-| 10 | **Backend** | Append AI response to history | Store assistant message |
-| 11 | **Backend** | Return ChatResponse | JSON with message + metadata |
-| 12 | **Frontend** | Parse response | Extract `data.message.content` |
-| 13 | **Frontend** | Add AI message to UI | `Processing` → `Complete` |
-| 14 | **Frontend** | Reset input state | `Complete` → `Idle` |
+| Step | Component | Action | Details |
+|------|-----------|--------|---------|
+| 1 | **Frontend** | User submits query | Message sent to `/api/chat` |
+| 2 | **Backend** | Tool Discovery | registry fetches tools from MCP servers |
+| 3 | **Backend** | LLM Call (Turn N) | Passes history + **Filtered Tools (15 essential)** |
+| 4 | **Ollama** | Model Inference | Model decides: use tool or answer user |
+| 5 | **Backend** | Tool Execution | If tool requested, run via MCP Client |
+| 6 | **Backend** | Context Update | Append Assistant JSON + Tool Result (with `tool_call_id`) |
+| 7 | **Backend** | Final Answer | Loop breaks when LLM returns text instead of JSON |
+| 8 | **Frontend** | Display | Final response rendered in UI |
 
 #### Data Structures
 
 ```typescript
-// Frontend Message State
-interface Message {
-  id: string           // Unique message ID
-  role: 'user' | 'assistant'
-  content: string      // Message text
-  timestamp: Date
+// Chat Message with Tool Support
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'tool' | 'system'
+  content: string
+  tool_calls?: ToolCall[]   // Present in assistant role
+  tool_call_id?: string     // Present in tool role
+  timestamp: string
 }
 
-// Backend Request
-interface ChatRequest {
-  messages: ChatMessage[]
-  conversation_id?: string
-  model?: string       // Default: gemma3:4b
-  temperature?: number // Default: 0.7
+interface ToolCall {
+  id: string
+  type: 'function'
+  function: {
+    name: string
+    arguments: object
+  }
 }
 
 // Backend Response
@@ -200,99 +205,61 @@ interface ChatResponse {
 }
 ```
 
+### Conversation Context & Tool Turn Flow
 
-### Conversation Context & Memory Flow
+This section explains how context is managed during multi-turn tool execution.
 
-This section explains how conversation history is managed and what data the LLM model sees at each turn.
-
-#### Memory Storage (In-Memory - Phase 1)
-
-```python
-# Backend: routes.py
-_conversations: Dict[str, List[ChatMessage]] = {}
-
-# Example state after 2 turns:
-{
-  "abc-123": [
-    ChatMessage(role="user", content="Hello! What's your name?"),
-    ChatMessage(role="assistant", content="Hello there! My name is Gemma..."),
-    ChatMessage(role="user", content="What is 25 times 4?"),
-    ChatMessage(role="assistant", content="25 times 4 is 100!")
-  ]
-}
-```
-
-#### Context Flow Diagram
+#### Tool Context Flow
 
 ```mermaid
-flowchart LR
-    subgraph Turn1["Turn 1"]
-        U1["User: Hello!"]
-        M1["Model sees:\n[user: Hello!]"]
-        A1["AI: I'm Gemma"]
-    end
-    
-    subgraph Turn2["Turn 2"]
-        U2["User: 25*4?"]
-        M2["Model sees:\n[user: Hello!]\n[assistant: I'm Gemma]\n[user: 25*4?]"]
-        A2["AI: 100!"]
-    end
-    
-    subgraph Turn3["Turn 3"]
-        U3["User: Thanks"]
-        M3["Model sees:\nALL 4 previous\nmessages +\n[user: Thanks]"]
-        A3["AI: You're welcome"]
-    end
-    
-    U1 --> M1 --> A1
-    A1 --> U2
-    U2 --> M2 --> A2
-    A2 --> U3
-    U3 --> M3 --> A3
+flowchart TD
+    U["User query"] --> A1["Assistant turn 1\n(Tool Call: read_file)"]
+    A1 --> T1["Tool execution turn\n(role: tool)"]
+    T1 --> A2["Assistant turn 2\n(Final Answer)"]
 ```
 
-#### What the Model Sees - Example
+#### What the Model Sees - Multi-Turn Example
 
-**Turn 1:**
+**Turn 1: Initial Query**
 ```json
-POST /api/chat
-{
-  "messages": [
-    {"role": "user", "content": "Hello! What's your name?"}
-  ]
-}
+[
+  {"role": "system", "content": "You are a helpful assistant..."},
+  {"role": "user", "content": "What's in README.md?"}
+]
 ```
-Model receives: **1 message** (just the user's question)
 
-**Turn 2:**
+**Turn 2: Tool Request (from AI)**
+*Internal State: Backend receives tool request*
 ```json
-POST /api/chat
-{
-  "messages": [
-    {"role": "user", "content": "Hello! What's your name?"},
-    {"role": "assistant", "content": "Hello there! My name is Gemma..."},
-    {"role": "user", "content": "What is 25 times 4?"}
-  ],
-  "conversation_id": "abc-123"
-}
+[
+  {"role": "system", "content": "..."},
+  {"role": "user", "content": "What's in README.md?"},
+  {"role": "assistant", "content": "", "tool_calls": [{"id": "call_123", "function": {"name": "read_file", ...}}]}
+]
 ```
-Model receives: **3 messages** (full conversation history for context)
 
-**Turn 3:**
+**Turn 3: Tool Result Injection**
+*Backend appends the tool output to history*
 ```json
-POST /api/chat
-{
-  "messages": [
-    {"role": "user", "content": "Hello! What's your name?"},
-    {"role": "assistant", "content": "Hello there! My name is Gemma..."},
-    {"role": "user", "content": "What is 25 times 4?"},
-    {"role": "assistant", "content": "25 times 4 is 100!"},
-    {"role": "user", "content": "Thanks!"}
-  ],
-  "conversation_id": "abc-123"
-}
+[
+  {"role": "system", "content": "..."},
+  {"role": "user", "content": "What's in README.md?"},
+  {"role": "assistant", "content": "", "tool_calls": [{"id": "call_123", ...}]},
+  {"role": "tool", "content": "# Project Title...", "tool_call_id": "call_123"}
+]
 ```
-Model receives: **5 messages** (entire conversation thread)
+Model receives: **4 messages** and now has the file content to answer the user.
+
+#### Backend Processing for Tools
+
+| Step | Component | Action |
+|------|-----------|--------|
+| 1 | `routes.py` | Add user message to history |
+| 2 | `ollama.py` | Call LLM with current history |
+| 3 | `ollama.py` | Parse JSON tool calls if model outputs raw text |
+| 4 | `routes.py` | If `tool_calls` present: execute via `registry.execute_tool` |
+| 5 | `routes.py` | Add `role: tool` message to history with result |
+| 6 | `routes.py` | Re-call LLM (Step 2) for final answer |
 
 #### Backend Processing Steps
 
@@ -332,13 +299,14 @@ Model receives: **5 messages** (entire conversation thread)
 
 ```
 ├── src/chatbot_ai_system/    # Backend application
-│   ├── server/               # FastAPI app and routes
-│   ├── providers/            # LLM provider implementations
-│   ├── models/               # Pydantic schemas
+│   ├── server/               # FastAPI app and multi-turn routes
+│   ├── providers/            # LLM providers (Ollama with JSON parsing)
+│   ├── models/               # Pydantic schemas (tool_call_id supported)
+│   ├── tools/                # MCP Tool implementation & registry
 │   └── config/               # Configuration management
+├── scripts/                  # Validation & benchmarking scripts
+├── phase_1.1.md              # Detailed Optimization Report
 ├── frontend/                 # Next.js frontend
-│   ├── app/                  # Next.js 14 app directory
-│   └── components/           # React components
 └── tests/                    # Test suites
 ```
 
@@ -364,12 +332,12 @@ Key environment variables (`.env`):
 # LLM Provider
 DEFAULT_LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama2
+OLLAMA_MODEL=llama3.2
 
-# Server
-HOST=0.0.0.0
-PORT=8000
-DEBUG=true
+# MCP Servers (Configured in registry.py)
+MCP_FS_ENABLE=true
+MCP_GIT_ENABLE=true
+MCP_FETCH_ENABLE=true
 ```
 
 ---
@@ -378,6 +346,7 @@ DEBUG=true
 
 ### Backend
 - **FastAPI** - Modern Python web framework
+- **Model Context Protocol (MCP)** - Standard for connecting LLMs to tools
 - **Ollama** - Local LLM inference
 - **Pydantic** - Data validation
 - **WebSockets** - Real-time streaming
@@ -386,20 +355,19 @@ DEBUG=true
 - **Next.js 14** - React framework
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling
-- **WebSocket API** - Real-time updates
 
 ---
 
 ## 📈 Roadmap
 
 - [x] **Phase 1**: Core Chatbot with Open Source LLM
-- [x] **Phase 1.1**: MCP Tool Support (Ollama)
-- [ ] **Phase 2**: Data Persistence & Memory Module
-- [ ] **Phase 3**: Multi-Provider Orchestration
+- [x] **Phase 1.1**: MCP Tool Support (Filesystem, Git, Web)
+- [ ] **Phase 2**: Data Persistence & User Memory (PostgreSQL)
+- [ ] **Phase 3**: Multi-Provider Orchestration (OpenAI/Anthropic)
 - [ ] **Phase 4**: Semantic Caching
 - [ ] **Phase 5**: Authentication & Multi-Tenancy
-- [ ] **Phase 6**: Observability Stack
-- [ ] **Phase 7**: Infrastructure & Deployment
+- [ ] **Phase 6**: Observability & Prompt Tracing
+- [ ] **Phase 7**: Infrastructure & Deployment (Docker/K8s)
 
 ---
 

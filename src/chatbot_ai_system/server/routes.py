@@ -95,7 +95,18 @@ async def chat_completion(request: ChatRequest):
 
     try:
         # Get all messages for context
-        all_messages = _conversations[conversation_id]
+        all_messages = list(_conversations[conversation_id])
+        
+        # Add system prompt if not present to guide tool use
+        if not any(m.role == MessageRole.SYSTEM for m in all_messages):
+            system_prompt = (
+                "You are a helpful AI assistant with access to local tools via MCP. "
+                "1. If you need information, select a tool and output its call in a JSON block. "
+                "2. You will then receive the tool's result in the next message. "
+                "3. Use the result to answer the user's question. DO NOT repeat the tool call if you have already received a result.\n"
+                "Format tool calls as: ```json\n{\"name\": \"...\", \"arguments\": {...}}\n```"
+            )
+            all_messages.insert(0, ChatMessage(role=MessageRole.SYSTEM, content=system_prompt))
 
         max_turns = 5
         final_response = None
@@ -106,10 +117,16 @@ async def chat_completion(request: ChatRequest):
                 model=request.model,
                 temperature=request.temperature,
                 max_tokens=request.max_tokens,
-                tools=registry.get_ollama_tools(),
+                tools=await registry.get_ollama_tools(),
             )
 
-            # Add assistant response to conversation history
+            # If the response contains tool calls, clear the content to avoid
+            # confusing the model with its own raw JSON in the next turn's history.
+            if response.message.tool_calls:
+                response.message.content = ""
+            
+            # Important: Update all_messages so the LLM sees its own response in next turn
+            all_messages.append(response.message)
             _conversations[conversation_id].append(response.message)
             final_response = response
 
@@ -122,7 +139,7 @@ async def chat_completion(request: ChatRequest):
                 tool_name = tool_call.function.name
                 tool_args = tool_call.function.arguments
                 
-                # logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
+                logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
                 
                 try:
                     tool = registry.get_tool(tool_name)
@@ -131,12 +148,13 @@ async def chat_completion(request: ChatRequest):
                     result = f"Error executing tool {tool_name}: {e}"
 
                 # Add tool result to history
-                _conversations[conversation_id].append(
-                    ChatMessage(
-                        role=MessageRole.TOOL,
-                        content=str(result),
-                    )
+                tool_msg = ChatMessage(
+                    role=MessageRole.TOOL,
+                    content=str(result),
+                    tool_call_id=tool_call.id
                 )
+                all_messages.append(tool_msg)
+                _conversations[conversation_id].append(tool_msg)
 
         if final_response:
             final_response.conversation_id = conversation_id
@@ -261,7 +279,7 @@ async def websocket_chat_stream(websocket: WebSocket):
                         model=request.model,
                         temperature=request.temperature,
                         max_tokens=request.max_tokens,
-                        tools=registry.get_ollama_tools(),
+                        tools=await registry.get_ollama_tools(),
                     ):
                         if not is_connected:
                             break

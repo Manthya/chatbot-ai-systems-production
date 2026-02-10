@@ -64,14 +64,63 @@ class OllamaProvider(BaseLLMProvider):
         if self._client and not self._client.is_closed:
             await self._client.aclose()
 
+    def _try_parse_tool_calls(self, content: str) -> Optional[List[ToolCall]]:
+        """Try to parse tool calls from message content (for models that output raw JSON)."""
+        import json
+        import re
+
+        try:
+            # Look for JSON blocks
+            # This regex matches a JSON object that has "name" and "arguments" keys
+            # It's a simple heuristic and might need refinement
+            # We look for something that starts with { and contains "name" and "arguments"
+            
+            # First, try to find a code block containing JSON
+            code_block_pattern = r"```(?:json)?\s*(\{.*?\})\s*```"
+            matches = re.findall(code_block_pattern, content, re.DOTALL)
+            
+            if not matches:
+                # Try to find raw JSON object in the text if no code block
+                # Non-greedy match for { ... }
+                # We expect "name": "..." and "arguments": { ... }
+                raw_pattern = r"(\{.*?\"name\"\s*:\s*\".*?\".*?\"arguments\"\s*:\s*\{.*?\}.*?\})"
+                matches = re.findall(raw_pattern, content, re.DOTALL)
+
+            tool_calls = []
+            for match in matches:
+                try:
+                    data = json.loads(match)
+                    if "name" in data and "arguments" in data:
+                        tool_calls.append(
+                            ToolCall(
+                                function=ToolCallFunction(
+                                    name=data["name"],
+                                    arguments=data["arguments"],
+                                )
+                            )
+                        )
+                except json.JSONDecodeError:
+                    continue
+            
+            return tool_calls if tool_calls else None
+
+        except Exception as e:
+            logger.warning(f"Error parsing tool calls from content: {e}")
+            return None
+
     def _format_messages(self, messages: List[ChatMessage]) -> List[dict]:
         """Format messages for Ollama API."""
         formatted = []
         for msg in messages:
             m = {"role": msg.role.value, "content": msg.content}
+            
+            if msg.role == MessageRole.TOOL and msg.tool_call_id:
+                m["tool_call_id"] = msg.tool_call_id
+
             if msg.tool_calls:
                 m["tool_calls"] = [
                     {
+                        "id": tc.id,
                         "function": {
                             "name": tc.function.name,
                             "arguments": tc.function.arguments,
@@ -138,6 +187,16 @@ class OllamaProvider(BaseLLMProvider):
                             )
                         )
                     )
+            
+            # Fallback: Try to parse tool calls from content if none returned by API
+            if not tool_calls and content:
+                tool_calls = self._try_parse_tool_calls(content)
+
+            if tool_calls:
+                logger.info(f"Ollama tool calls found: {[tc.function.name for tc in tool_calls]}")
+            
+            if content:
+                logger.info(f"Ollama response content: {content[:200]}...")
 
             return ChatResponse(
                 message=ChatMessage(

@@ -1,5 +1,6 @@
 """Pydantic schemas for the chatbot API."""
 
+import uuid
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -22,6 +23,7 @@ class ToolCallFunction(BaseModel):
 
 
 class ToolCall(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     function: ToolCallFunction
     type: str = "function"
 
@@ -32,6 +34,7 @@ class ChatMessage(BaseModel):
     role: MessageRole
     content: str
     tool_calls: Optional[List[ToolCall]] = None
+    tool_call_id: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     metadata: Optional[Dict[str, Any]] = None
 

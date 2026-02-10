@@ -3,6 +3,7 @@
 from functools import lru_cache
 from typing import List
 
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -16,11 +17,11 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # LLM Provider Configuration
-    default_llm_provider: str = "ollama"
+    default_llm_provider: str = Field(default="ollama", env="DEFAULT_LLM_PROVIDER")
 
     # Ollama Configuration
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama2"
+    ollama_base_url: str = Field(default="http://localhost:11434", env="OLLAMA_BASE_URL")
+    ollama_model: str = Field(default="llama3.2", env="OLLAMA_MODEL")
 
     # OpenAI Configuration (Phase 3)
     openai_api_key: str | None = None

@@ -479,3 +479,513 @@ INFO:     127.0.0.1:63862 - "POST /api/chat HTTP/1.1" 200 OK
 }
 2026-02-10 14:51:57,562 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
 INFO:     127.0.0.1:63892 - "POST /api/chat HTTP/1.1" 200 OK
+2026-02-10 15:12:34,289 - httpx - INFO - HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:64820 - "GET /health HTTP/1.1" 200 OK
+2026-02-10 15:12:34,296 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What time is it now?"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 15:12:40,834 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 15:12:40,837 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What time is it now?"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "function": {
+            "name": "get_current_time",
+            "arguments": {}
+          },
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "2026-02-10T15:12:40.836274"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 15:12:41,387 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:64824 - "POST /api/chat HTTP/1.1" 200 OK
+2026-02-10 15:12:41,400 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Check the git status of this repository."
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 15:12:42,307 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 15:12:42,327 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Check the git status of this repository."
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "function": {
+            "name": "check_repo_status",
+            "arguments": {}
+          },
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "On branch feature_v1.1\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   ollama.log\n\tmodified:   requirements.txt\n\tmodified:   scripts/verify_mcp.py\n\tmodified:   server.log\n\tmodified:   src/chatbot_ai_system/server/main.py\n\tmodified:   src/chatbot_ai_system/server/routes.py\n\tmodified:   src/chatbot_ai_system/tools/registry.py\n\nUntracked files:\n  (use \"git add <file>...\" to include in what will be committed)\n\tsrc/chatbot_ai_system/tools/mcp_client.py\n\ttests/mock_mcp_server.py\n\ttests/test_mcp_integration.py\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\n"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 15:12:46,716 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:64856 - "POST /api/chat HTTP/1.1" 200 OK
+2026-02-10 15:12:46,719 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Read the README.md file in the current directory and summarize its purpose."
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 15:12:50,095 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 15:12:50,112 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Read the README.md file in the current directory and summarize its purpose."
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "function": {
+            "name": "get_current_time",
+            "arguments": {}
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "name": "check_repo_status",
+            "arguments": {}
+          },
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "2026-02-10T15:12:50.096191"
+    },
+    {
+      "role": "tool",
+      "content": "On branch feature_v1.1\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   ollama.log\n\tmodified:   requirements.txt\n\tmodified:   scripts/verify_mcp.py\n\tmodified:   server.log\n\tmodified:   src/chatbot_ai_system/server/main.py\n\tmodified:   src/chatbot_ai_system/server/routes.py\n\tmodified:   src/chatbot_ai_system/tools/registry.py\n\nUntracked files:\n  (use \"git add <file>...\" to include in what will be committed)\n\tsrc/chatbot_ai_system/tools/mcp_client.py\n\ttests/mock_mcp_server.py\n\ttests/test_mcp_integration.py\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\n"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 15:12:53,867 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:64859 - "POST /api/chat HTTP/1.1" 200 OK
+2026-02-10 15:12:53,870 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What changed in the last 3 commits?"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 15:12:54,888 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 15:12:54,906 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What changed in the last 3 commits?"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "function": {
+            "name": "check_repo_status",
+            "arguments": {
+              "c": "3"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "On branch feature_v1.1\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   ollama.log\n\tmodified:   requirements.txt\n\tmodified:   scripts/verify_mcp.py\n\tmodified:   server.log\n\tmodified:   src/chatbot_ai_system/server/main.py\n\tmodified:   src/chatbot_ai_system/server/routes.py\n\tmodified:   src/chatbot_ai_system/tools/registry.py\n\nUntracked files:\n  (use \"git add <file>...\" to include in what will be committed)\n\tsrc/chatbot_ai_system/tools/mcp_client.py\n\ttests/mock_mcp_server.py\n\ttests/test_mcp_integration.py\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\n"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 15:13:00,900 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:64871 - "POST /api/chat HTTP/1.1" 200 OK
+2026-02-10 15:13:00,902 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Fetch the content of https://example.com and tell me the title of the page."
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 15:13:03,139 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 15:13:03,141 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Fetch the content of https://example.com and tell me the title of the page."
+    },
+    {
+      "role": "assistant",
+      "content": "}; {\"name\":\"fetch\", \"parameters\": {\"url\": \"https://example.com\"}}; {\"name\":\"get_current_time\", \"parameters\": {}}; {\"name\":\"document.title\", \"parameters\": {}}",
+      "tool_calls": [
+        {
+          "function": {
+            "name": "get_current_time",
+            "arguments": {}
+          },
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "2026-02-10T15:13:03.140840"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 15:13:06,204 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:64874 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-02-10 15:13:26,130 - chatbot_ai_system.server.main - INFO - Shutting down Chatbot AI System
+INFO:     Application shutdown complete.
+INFO:     Finished server process [64491]
