@@ -4,7 +4,7 @@ import time
 import sys
 
 BASE_URL = "http://localhost:8000"
-MODEL = "gemma3:4b"  # Using available model
+MODEL = "llama3.2"  # Using known tool-supporting model
 
 def wait_for_server():
     print("Waiting for server to be ready...")

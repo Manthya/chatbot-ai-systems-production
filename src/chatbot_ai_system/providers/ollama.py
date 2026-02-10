@@ -112,6 +112,8 @@ class OllamaProvider(BaseLLMProvider):
         if tools:
             payload["tools"] = tools
 
+
+
         try:
             response = await client.post("/api/chat", json=payload)
             response.raise_for_status()

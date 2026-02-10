@@ -1,68 +1,481 @@
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/uvicorn/__main__.py", line 4, in <module>
-    uvicorn.main()
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/click/core.py", line 1161, in __call__
-    return self.main(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/click/core.py", line 1082, in main
-    rv = self.invoke(ctx)
-         ^^^^^^^^^^^^^^^^
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/click/core.py", line 1443, in invoke
-    return ctx.invoke(self.callback, **ctx.params)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/click/core.py", line 788, in invoke
-    return __callback(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/uvicorn/main.py", line 412, in main
-    run(
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/uvicorn/main.py", line 579, in run
-    server.run()
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/uvicorn/server.py", line 66, in run
-    return asyncio.run(self.serve(sockets=sockets))
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/mk/miniconda3/lib/python3.12/asyncio/runners.py", line 194, in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-  File "/Users/mk/miniconda3/lib/python3.12/asyncio/runners.py", line 118, in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/uvicorn/server.py", line 70, in serve
-    await self._serve(sockets)
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/uvicorn/server.py", line 77, in _serve
-    config.load()
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/uvicorn/config.py", line 435, in load
-    self.loaded_app = import_from_string(self.app)
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/mk/miniconda3/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
-    module = importlib.import_module(module_str)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/mk/miniconda3/lib/python3.12/importlib/__init__.py", line 90, in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
-  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
-  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
-  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
-  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/server/__init__.py", line 3, in <module>
-    from .main import app, create_app
-  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/server/main.py", line 11, in <module>
-    from .routes import router
-  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/server/routes.py", line 23, in <module>
-    from chatbot_ai_system.tools import registry
-  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/tools/__init__.py", line 3, in <module>
-    from .system_tools import GetCurrentTimeTool, CheckRepoStatusTool
-  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/tools/system_tools.py", line 11, in <module>
-    class GetCurrentTimeTool(MCPTool):
-  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/tools/system_tools.py", line 14, in GetCurrentTimeTool
-    args_schema: Type[BaseModel] = GetCurrentTimeArgs
-                 ^^^^
-NameError: name 'Type' is not defined. Did you mean: 'type'?
+INFO:     Started server process [64491]
+INFO:     Waiting for application startup.
+2026-02-10 14:45:19,702 - chatbot_ai_system.server.main - INFO - Starting Chatbot AI System v0.1.0
+2026-02-10 14:45:19,702 - chatbot_ai_system.server.main - INFO - Debug mode: True
+2026-02-10 14:45:19,702 - chatbot_ai_system.server.main - INFO - Default LLM provider: ollama
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-02-10 14:45:21,022 - httpx - INFO - HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63457 - "GET /health HTTP/1.1" 200 OK
+2026-02-10 14:45:21,025 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "gemma3:4b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What time is it now?"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 14:45:21,143 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 400 Bad Request"
+2026-02-10 14:45:21,143 - chatbot_ai_system.providers.ollama - ERROR - Ollama API error: Client error '400 Bad Request' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+2026-02-10 14:45:21,143 - chatbot_ai_system.server.routes - ERROR - Chat completion error: Failed to get completion from Ollama: Client error '400 Bad Request' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+INFO:     127.0.0.1:63461 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+2026-02-10 14:45:21,146 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "gemma3:4b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Check the git status of this repository."
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 14:45:21,244 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 400 Bad Request"
+2026-02-10 14:45:21,244 - chatbot_ai_system.providers.ollama - ERROR - Ollama API error: Client error '400 Bad Request' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+2026-02-10 14:45:21,244 - chatbot_ai_system.server.routes - ERROR - Chat completion error: Failed to get completion from Ollama: Client error '400 Bad Request' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+INFO:     127.0.0.1:63463 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+2026-02-10 14:45:46,403 - httpx - INFO - HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63505 - "GET /health HTTP/1.1" 200 OK
+2026-02-10 14:45:46,406 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What time is it now?"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 14:45:46,407 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 404 Not Found"
+2026-02-10 14:45:46,407 - chatbot_ai_system.providers.ollama - ERROR - Ollama API error: Client error '404 Not Found' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+2026-02-10 14:45:46,407 - chatbot_ai_system.server.routes - ERROR - Chat completion error: Failed to get completion from Ollama: Client error '404 Not Found' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+INFO:     127.0.0.1:63509 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+2026-02-10 14:45:46,409 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Check the git status of this repository."
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 14:45:46,410 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 404 Not Found"
+2026-02-10 14:45:46,410 - chatbot_ai_system.providers.ollama - ERROR - Ollama API error: Client error '404 Not Found' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+2026-02-10 14:45:46,410 - chatbot_ai_system.server.routes - ERROR - Chat completion error: Failed to get completion from Ollama: Client error '404 Not Found' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+INFO:     127.0.0.1:63511 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+2026-02-10 14:48:44,276 - httpx - INFO - HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63675 - "GET /health HTTP/1.1" 200 OK
+2026-02-10 14:48:44,279 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "codellama:latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What time is it now?"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 14:48:44,290 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 400 Bad Request"
+2026-02-10 14:48:44,291 - chatbot_ai_system.providers.ollama - ERROR - Ollama API error: Client error '400 Bad Request' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+2026-02-10 14:48:44,291 - chatbot_ai_system.server.routes - ERROR - Chat completion error: Failed to get completion from Ollama: Client error '400 Bad Request' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+INFO:     127.0.0.1:63679 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+2026-02-10 14:48:44,292 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "codellama:latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Check the git status of this repository."
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 14:48:44,299 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 400 Bad Request"
+2026-02-10 14:48:44,300 - chatbot_ai_system.providers.ollama - ERROR - Ollama API error: Client error '400 Bad Request' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+2026-02-10 14:48:44,300 - chatbot_ai_system.server.routes - ERROR - Chat completion error: Failed to get completion from Ollama: Client error '400 Bad Request' for url 'http://localhost:11434/api/chat'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+INFO:     127.0.0.1:63681 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+2026-02-10 14:51:39,651 - httpx - INFO - HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63858 - "GET /health HTTP/1.1" 200 OK
+2026-02-10 14:51:39,657 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What time is it now?"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 14:51:51,391 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 14:51:51,393 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What time is it now?"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "function": {
+            "name": "get_current_time",
+            "arguments": {}
+          },
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "2026-02-10T14:51:51.392551"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 14:51:51,957 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63862 - "POST /api/chat HTTP/1.1" 200 OK
+2026-02-10 14:51:51,962 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Check the git status of this repository."
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 14:51:52,855 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 14:51:52,893 - chatbot_ai_system.providers.ollama - ERROR - DEBUG: Ollama payload: {
+  "model": "llama3.2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Check the git status of this repository."
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "function": {
+            "name": "check_repo_status",
+            "arguments": {}
+          },
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "On branch feature_v1.1\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   ollama.log\n\tmodified:   scripts/verify_mcp.py\n\tmodified:   server.log\n\tmodified:   src/chatbot_ai_system/providers/ollama.py\n\tmodified:   src/chatbot_ai_system/tools/system_tools.py\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\n"
+    }
+  ],
+  "stream": false,
+  "options": {
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_time",
+        "description": "Get the current system time in ISO format.",
+        "parameters": {
+          "properties": {},
+          "title": "GetCurrentTimeArgs",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_repo_status",
+        "description": "Check the git status of the current repository.",
+        "parameters": {
+          "properties": {},
+          "title": "CheckRepoStatusArgs",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}
+2026-02-10 14:51:57,562 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:63892 - "POST /api/chat HTTP/1.1" 200 OK
