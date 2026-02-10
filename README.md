@@ -30,8 +30,8 @@ brew install ollama
 # Start Ollama service
 ollama serve
 
-# Pull Llama 3.2 (Recommended for tool use)
-ollama pull llama3.2
+# Pull Qwen 2.5 14B (Required for Decision Discipline)
+ollama pull qwen2.5:14b-instruct
 ```
 
 ### 3. Start Backend
@@ -126,8 +126,9 @@ sequenceDiagram
     participant T as MCP Tools
     
     U->>B: POST /api/chat (query)
-    loop Tool Interaction (Max 5 turns)
-        B->>L: Call LLM with History + Tools
+    B->>L: Planning Phase (Use Tool?)
+    alt USE_TOOL
+        B->>L: Call LLM with History + Filtered Tools
         L-->>B: Assistant Response (Tool Call or Content)
         alt is Tool Call
             B->>T: Execute Tool (e.g., read_file)
@@ -136,6 +137,9 @@ sequenceDiagram
         else is Final Content
             B->>B: Final Answer Ready
         end
+    else NO_TOOL
+        B->>L: Call LLM (No tools exposed)
+        L-->>B: Natural Language Response
     end
     B-->>U: Final ChatResponse JSON
 ```
@@ -166,12 +170,14 @@ stateDiagram-v2
 |------|-----------|--------|---------|
 | 1 | **Frontend** | User submits query | Message sent to `/api/chat` |
 | 2 | **Backend** | Tool Discovery | registry fetches tools from MCP servers |
-| 3 | **Backend** | LLM Call (Turn N) | Passes history + **Filtered Tools (15 essential)** |
-| 4 | **Ollama** | Model Inference | Model decides: use tool or answer user |
-| 5 | **Backend** | Tool Execution | If tool requested, run via MCP Client |
-| 6 | **Backend** | Context Update | Append Assistant JSON + Tool Result (with `tool_call_id`) |
-| 7 | **Backend** | Final Answer | Loop breaks when LLM returns text instead of JSON |
-| 8 | **Frontend** | Display | Final response rendered in UI |
+| 3 | **Backend** | Planning Phase | Ask LLM: "USE_TOOL" or "NO_TOOL"? |
+| 4 | **Backend** | Tool Filtering | If USE_TOOL, filter tools by keywords |
+| 5 | **Backend** | LLM Call (Turn N) | Passes history + **Filtered Tools (Max 5)** |
+| 6 | **Ollama** | Model Inference | Model executes tool call (Strict JSON) |
+| 7 | **Backend** | Tool Execution | If tool requested, run via MCP Client |
+| 8 | **Backend** | Context Update | Append Assistant JSON + Tool Result (with `tool_call_id`) |
+| 9 | **Backend** | Final Answer | Loop breaks when LLM returns text instead of JSON |
+| 10 | **Frontend** | Display | Final response rendered in UI |
 
 #### Data Structures
 
@@ -340,7 +346,7 @@ Key environment variables (`.env`):
 # LLM Provider
 DEFAULT_LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2
+OLLAMA_MODEL=qwen2.5:14b-instruct
 
 # MCP Servers (Configured in registry.py)
 MCP_FS_ENABLE=true
@@ -370,6 +376,7 @@ MCP_FETCH_ENABLE=true
 
 - [x] **Phase 1**: Core Chatbot with Open Source LLM
 - [x] **Phase 1.1**: MCP Tool Support & Streaming Execution
+- [x] **Phase 1.2**: Decision Discipline (Smart Routing & Planning)
 - [ ] **Phase 2**: Data Persistence & User Memory (PostgreSQL)
 - [ ] **Phase 3**: Multi-Provider Orchestration (OpenAI/Anthropic)
 - [ ] **Phase 4**: Semantic Caching
