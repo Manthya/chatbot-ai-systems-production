@@ -7,8 +7,10 @@ import { Header } from '@/components/Header'
 
 interface Message {
     id: string
-    role: 'user' | 'assistant' | 'system'
+    role: 'user' | 'assistant' | 'system' | 'tool'
     content: string
+    tool_calls?: any[]
+    tool_call_id?: string
     timestamp: Date
 }
 
@@ -24,6 +26,7 @@ export default function Home() {
     const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected')
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const wsRef = useRef<WebSocket | null>(null)
+    const fullContentRef = useRef('')
 
     // Scroll to bottom on new messages
     const scrollToBottom = useCallback(() => {
@@ -77,21 +80,25 @@ export default function Home() {
             }
 
             if (data.content) {
-                setStreamingContent(prev => prev + data.content)
+                fullContentRef.current += data.content
+                setStreamingContent(fullContentRef.current)
             }
 
             if (data.done) {
                 // Finalize the message
+                const finalContent = fullContentRef.current + (data.content || '')
                 setMessages(prev => [
                     ...prev,
                     {
                         id: `msg-${Date.now()}`,
                         role: 'assistant',
-                        content: streamingContent + (data.content || ''),
+                        content: finalContent,
+                        tool_calls: data.tool_calls,
                         timestamp: new Date(),
                     }
                 ])
                 setStreamingContent('')
+                fullContentRef.current = ''
                 setStatus(null)
                 setIsLoading(false)
                 if (data.conversation_id) {
@@ -101,7 +108,7 @@ export default function Home() {
         }
 
         wsRef.current = ws
-    }, [streamingContent])
+    }, [])
 
     useEffect(() => {
         connectWebSocket()
@@ -129,6 +136,8 @@ export default function Home() {
         const apiMessages = [...messages, userMessage].map(m => ({
             role: m.role,
             content: m.content,
+            tool_calls: m.tool_calls,
+            tool_call_id: m.tool_call_id,
         }))
 
         // Send via WebSocket

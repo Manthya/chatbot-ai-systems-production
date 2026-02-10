@@ -1,0 +1,18 @@
+
+> chatbot-frontend@0.1.0 dev
+> next dev
+
+   ▲ Next.js 14.1.0
+   - Local:        http://localhost:3000
+   - Environments: .env.local
+
+ ✓ Ready in 1820ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.8s (796 modules)
+ ✓ Compiled in 290ms (397 modules)
+ ✓ Compiled in 393ms (773 modules)
+ ✓ Compiled in 148ms (787 modules)
+ ✓ Compiled in 159ms (787 modules)
+ ✓ Compiled in 194ms (787 modules)
+ ✓ Compiled in 365ms (787 modules)
+ ✓ Compiled in 117ms (787 modules)

@@ -90,12 +90,16 @@ class OllamaProvider(BaseLLMProvider):
             for match in matches:
                 try:
                     data = json.loads(match)
-                    if "name" in data and "arguments" in data:
+                    # Support both OpenAI/Ollama format and simpler variations
+                    name = data.get("name") or data.get("function", {}).get("name")
+                    args = data.get("arguments") or data.get("function", {}).get("arguments", {})
+                    
+                    if name and name != "null":
                         tool_calls.append(
                             ToolCall(
                                 function=ToolCallFunction(
-                                    name=data["name"],
-                                    arguments=data["arguments"],
+                                    name=name,
+                                    arguments=args,
                                 )
                             )
                         )
@@ -114,9 +118,14 @@ class OllamaProvider(BaseLLMProvider):
         for msg in messages:
             m = {"role": msg.role.value, "content": msg.content}
             
-            if msg.role == MessageRole.TOOL and msg.tool_call_id:
-                m["tool_call_id"] = msg.tool_call_id
+            # For tool results, Ollama expects tool_call_id
+            if msg.role == MessageRole.TOOL:
+                if msg.tool_call_id:
+                    m["tool_call_id"] = msg.tool_call_id
+                else:
+                    logger.warning(f"Tool message missing tool_call_id: {msg}")
 
+            # For assistant messages with tool calls
             if msg.tool_calls:
                 m["tool_calls"] = [
                     {
@@ -129,6 +138,10 @@ class OllamaProvider(BaseLLMProvider):
                     }
                     for tc in msg.tool_calls
                 ]
+                # Some models/APIs prefer content to be null or omitted if tool_calls present
+                if not m["content"]:
+                    del m["content"]
+            
             formatted.append(m)
         return formatted
 
@@ -181,6 +194,7 @@ class OllamaProvider(BaseLLMProvider):
                     function_data = tc.get("function", {})
                     tool_calls.append(
                         ToolCall(
+                            id=tc.get("id") or str(uuid.uuid4()),
                             function=ToolCallFunction(
                                 name=function_data.get("name"),
                                 arguments=function_data.get("arguments", {}),
@@ -270,6 +284,7 @@ class OllamaProvider(BaseLLMProvider):
                                     function_data = tc.get("function", {})
                                     tool_calls.append(
                                         ToolCall(
+                                            id=tc.get("id") or str(uuid.uuid4()),
                                             function=ToolCallFunction(
                                                 name=function_data.get("name"),
                                                 arguments=function_data.get("arguments", {}),

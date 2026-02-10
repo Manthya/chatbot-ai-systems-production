@@ -259,11 +259,23 @@ async def websocket_chat_stream(websocket: WebSocket):
             conversation_id = request.conversation_id or str(uuid.uuid4())
             if conversation_id not in _conversations:
                 _conversations[conversation_id] = []
+                # Add default system prompt for context
+                _conversations[conversation_id].append(ChatMessage(
+                    role=MessageRole.SYSTEM,
+                    content=(
+                        "You are a helpful AI assistant with access to tools. Use tools only when "
+                        "the user's request requires them. For greetings and general conversation, "
+                        "respond naturally in plain text."
+                    )
+                ))
 
-            # Add messages to conversation
+            # Add new messages from client
+            # We use a combined hash of role and content to deduplicate
+            history_fingerprints = [(m.role, m.content) for m in _conversations[conversation_id]]
             for msg in request.messages:
-                if msg not in _conversations[conversation_id]:
+                if (msg.role, msg.content) not in history_fingerprints:
                     _conversations[conversation_id].append(msg)
+                    history_fingerprints.append((msg.role, msg.content))
 
             try:
                 # Tool loop for streaming

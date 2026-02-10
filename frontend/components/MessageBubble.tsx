@@ -4,8 +4,10 @@ import ReactMarkdown from 'react-markdown'
 
 interface Message {
     id: string
-    role: 'user' | 'assistant' | 'system'
+    role: 'user' | 'assistant' | 'system' | 'tool'
     content: string
+    tool_calls?: any[]
+    tool_call_id?: string
     timestamp: Date
 }
 
@@ -21,8 +23,8 @@ export function MessageBubble({ message, isStreaming = false }: MessageBubblePro
         <div className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
             {/* Avatar */}
             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isUser
-                    ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
-                    : 'bg-gradient-to-br from-primary-500 to-purple-500'
+                ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
+                : 'bg-gradient-to-br from-primary-500 to-purple-500'
                 }`}>
                 <span className="text-white text-sm font-medium">
                     {isUser ? 'U' : 'AI'}
@@ -32,8 +34,8 @@ export function MessageBubble({ message, isStreaming = false }: MessageBubblePro
             {/* Message bubble */}
             <div className={`max-w-[80%] ${isUser ? 'items-end' : 'items-start'}`}>
                 <div className={`rounded-2xl px-4 py-3 ${isUser
-                        ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white'
-                        : 'glass-card text-dark-text'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white'
+                    : 'glass-card text-dark-text'
                     }`}>
                     {isUser ? (
                         <p className="whitespace-pre-wrap break-words">{message.content}</p>
