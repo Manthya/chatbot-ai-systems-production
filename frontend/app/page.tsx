@@ -20,6 +20,7 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState(false)
     const [conversationId, setConversationId] = useState<string | null>(null)
     const [streamingContent, setStreamingContent] = useState('')
+    const [status, setStatus] = useState<string | null>(null)
     const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected')
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const wsRef = useRef<WebSocket | null>(null)
@@ -31,7 +32,7 @@ export default function Home() {
 
     useEffect(() => {
         scrollToBottom()
-    }, [messages, streamingContent, scrollToBottom])
+    }, [messages, streamingContent, status, scrollToBottom])
 
     // WebSocket connection for streaming
     const connectWebSocket = useCallback(() => {
@@ -67,7 +68,12 @@ export default function Home() {
             if (data.error) {
                 console.error('Server error:', data.error)
                 setIsLoading(false)
+                setStatus(null)
                 return
+            }
+
+            if (data.status) {
+                setStatus(data.status)
             }
 
             if (data.content) {
@@ -86,6 +92,7 @@ export default function Home() {
                     }
                 ])
                 setStreamingContent('')
+                setStatus(null)
                 setIsLoading(false)
                 if (data.conversation_id) {
                     setConversationId(data.conversation_id)
@@ -116,51 +123,34 @@ export default function Home() {
         setMessages(prev => [...prev, userMessage])
         setIsLoading(true)
         setStreamingContent('')
+        setStatus('Preparing...')
 
         // Format messages for API
         const apiMessages = [...messages, userMessage].map(m => ({
             role: m.role,
             content: m.content,
-            timestamp: m.timestamp.toISOString(),
         }))
 
-        // Use REST API for reliable responses
-        try {
-            const response = await fetch(`${API_URL}/api/chat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    messages: apiMessages,
-                    conversation_id: conversationId,
-                }),
-            })
-
-            if (!response.ok) throw new Error('Failed to send message')
-
-            const data = await response.json()
-            setMessages(prev => [
-                ...prev,
-                {
-                    id: `msg-${Date.now()}`,
-                    role: 'assistant',
-                    content: data.message.content,
-                    timestamp: new Date(),
-                }
-            ])
-            setConversationId(data.conversation_id)
-        } catch (error) {
-            console.error('Error sending message:', error)
+        // Send via WebSocket
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+                messages: apiMessages,
+                conversation_id: conversationId,
+            }))
+        } else {
+            console.error('WebSocket not connected')
+            setIsLoading(false)
+            setStatus(null)
             setMessages(prev => [
                 ...prev,
                 {
                     id: `msg-${Date.now()}-error`,
                     role: 'assistant',
-                    content: 'Sorry, I encountered an error. Please try again.',
+                    content: 'WebSocket not connected. Reconnecting...',
                     timestamp: new Date(),
                 }
             ])
-        } finally {
-            setIsLoading(false)
+            connectWebSocket()
         }
     }
 
@@ -213,12 +203,17 @@ export default function Home() {
                     )}
 
                     {/* Loading indicator */}
-                    {isLoading && !streamingContent && (
+                    {(isLoading || status) && !streamingContent && (
                         <div className="flex items-start gap-3">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center flex-shrink-0">
                                 <span className="text-white text-sm font-medium">AI</span>
                             </div>
-                            <div className="glass-card rounded-2xl p-4">
+                            <div className="glass-card rounded-2xl p-4 flex flex-col gap-2">
+                                {status && (
+                                    <div className="text-xs text-primary-400 font-medium animate-pulse">
+                                        {status}
+                                    </div>
+                                )}
                                 <div className="typing-indicator">
                                     <span></span>
                                     <span></span>

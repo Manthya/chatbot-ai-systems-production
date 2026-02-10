@@ -10,6 +10,7 @@ This document outlines the evolutionary steps taken during Phase 1 to integrate 
 *   **Tool Filtering Architecture**: Implemented an allowlist mechanism in `ToolRegistry` to reduce the tool surface from 44+ tools to 15 essential "Swiss Army Knife" tools.
 *   **Default Model Alignment**: Configured **Llama 3.2 (3B)** as the default model for superior tool-calling compliance and multi-turn reliability.
 *   **JSON Parsing Fallback**: Added a manual regex-based JSON parser to `OllamaProvider` to handle models that output tool calls in plain text content rather than using the native API.
+*   **Streaming Tool Execution**: Enabled real-time "Thinking" status updates by yielding intermediate chunks before tool execution over WebSocket.
 
 ## 2. Challenges & Solutions
 
@@ -26,9 +27,9 @@ This document outlines the evolutionary steps taken during Phase 1 to integrate 
 *   **Problem**: Loading all 44 Git/FS tools exceeded the small local models' capabilities, leading to hallucinations and "Refusals".
 *   **Solution**: Implemented the `ESSENTIAL_TOOLS` allowlist in `registry.py` to prioritize general-purpose discovery and action tools.
 
-### C. Native Tool Calling Inconsistency
-*   **Problem**: Some models (like Qwen) output tool calls as raw JSON in the message body, which the standard Ollama API didn't parse.
-*   **Solution**: Patched `OllamaProvider` to detect and manually parse these JSON blocks into the system's internal `ToolCall` schema.
+### C. Streaming Termination (WebSocket)
+*   **Problem**: The LLM would yield a `done=True` chunk at the end of its first turn, causing the client to close the WebSocket before the tool-execution loop could complete.
+*   **Solution**: Modified `routes.py` to suppress standard `done` signals if tool calls are pending, yielding a custom final `done` chunk only after all tool turns are exhausted.
 
 ## 3. Current System State
 The system is currently a **Multi-Turn Reactive Chatbot**.

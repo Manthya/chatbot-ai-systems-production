@@ -74,6 +74,7 @@ class StreamChunk(BaseModel):
     """A single chunk in a streaming response."""
 
     content: str
+    status: Optional[str] = None
     done: bool = False
     tool_calls: Optional[List[ToolCall]] = None
     conversation_id: Optional[str] = None

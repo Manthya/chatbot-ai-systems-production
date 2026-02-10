@@ -290,6 +290,12 @@ async def websocket_chat_stream(websocket: WebSocket):
                             current_tool_calls.extend(chunk.tool_calls)
                             
                         chunk.conversation_id = conversation_id
+                        
+                        # Suppress 'done' if we are in the middle of tool processing
+                        # We will send a final 'done' chunk ourselves later if needed
+                        if chunk.done:
+                            continue
+
                         try:
                             await websocket.send_json(chunk.model_dump())
                         except Exception as send_error:
@@ -301,14 +307,22 @@ async def websocket_chat_stream(websocket: WebSocket):
                         break
 
                     # Add assistant message to conversation
-                    assistant_msg = ChatMessage(role=MessageRole.ASSISTANT, content=full_content)
-                    if current_tool_calls:
-                        assistant_msg.tool_calls = current_tool_calls
-                    
+                    # Clear content if tool calls are present (consistent with chat_completion fix)
+                    stored_content = full_content if not current_tool_calls else ""
+                    assistant_msg = ChatMessage(
+                        role=MessageRole.ASSISTANT, 
+                        content=stored_content,
+                        tool_calls=current_tool_calls
+                    )
                     _conversations[conversation_id].append(assistant_msg)
 
-                    # If no tool calls, we are done
+                    # If no tool calls, we are done - send a final done chunk
                     if not current_tool_calls:
+                        try:
+                            final_chunk = StreamChunk(content="", done=True, conversation_id=conversation_id)
+                            await websocket.send_json(final_chunk.model_dump())
+                        except Exception:
+                            pass
                         break
                         
                     # Execute tools
@@ -316,6 +330,19 @@ async def websocket_chat_stream(websocket: WebSocket):
                         tool_name = tc.function.name
                         tool_args = tc.function.arguments
                         
+                        # Yield "Thinking" status chunk
+                        if is_connected:
+                            try:
+                                status_chunk = StreamChunk(
+                                    content="",
+                                    status=f"Thinking: {tool_name}...",
+                                    conversation_id=conversation_id
+                                )
+                                await websocket.send_json(status_chunk.model_dump())
+                            except Exception:
+                                pass
+
+                        logger.info(f"Streaming turn: Executing tool {tool_name}")
                         try:
                             tool = registry.get_tool(tool_name)
                             result = await tool.run(**tool_args)
@@ -323,7 +350,11 @@ async def websocket_chat_stream(websocket: WebSocket):
                             result = f"Error executing tool {tool_name}: {e}"
                             
                         _conversations[conversation_id].append(
-                            ChatMessage(role=MessageRole.TOOL, content=str(result))
+                            ChatMessage(
+                                role=MessageRole.TOOL, 
+                                content=str(result),
+                                tool_call_id=tc.id
+                            )
                         )
 
             except Exception as e:

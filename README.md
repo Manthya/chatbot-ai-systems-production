@@ -194,6 +194,14 @@ interface ToolCall {
   }
 }
 
+interface StreamChunk {
+  content: string
+  status?: string           // Real-time activity (e.g. "Thinking: read_file...")
+  done: boolean
+  tool_calls?: ToolCall[]
+  conversation_id?: string
+}
+
 // Backend Response
 interface ChatResponse {
   message: ChatMessage
@@ -361,7 +369,7 @@ MCP_FETCH_ENABLE=true
 ## 📈 Roadmap
 
 - [x] **Phase 1**: Core Chatbot with Open Source LLM
-- [x] **Phase 1.1**: MCP Tool Support (Filesystem, Git, Web)
+- [x] **Phase 1.1**: MCP Tool Support & Streaming Execution
 - [ ] **Phase 2**: Data Persistence & User Memory (PostgreSQL)
 - [ ] **Phase 3**: Multi-Provider Orchestration (OpenAI/Anthropic)
 - [ ] **Phase 4**: Semantic Caching
