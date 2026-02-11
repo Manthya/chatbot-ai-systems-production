@@ -84,3 +84,49 @@ class ConversationRepository(BaseRepository[Conversation]):
         result = await self.session.execute(statement)
         messages = result.scalars().all()
         return list(reversed(messages))
+
+    async def update_summary(self, conversation_id: UUID, summary: str, last_seq_id: int) -> None:
+        """Update the conversation summary and the last summarized sequence ID."""
+        conv = await self.get(conversation_id)
+        if conv:
+            conv.summary = summary
+            conv.last_summarized_seq_id = last_seq_id
+            await self.session.flush()
+
+    async def get_conversation_summary(self, conversation_id: UUID) -> Optional[dict]:
+        """Get the summary and last summarized sequence ID."""
+        statement = select(Conversation).where(Conversation.id == conversation_id)
+        result = await self.session.execute(statement)
+        conv = result.scalar_one_or_none()
+        if conv:
+            return {"summary": conv.summary, "last_summarized_seq_id": conv.last_summarized_seq_id}
+        return None
+
+    async def update_message_embedding(self, message_id: UUID, embedding: List[float]) -> None:
+        """Update a message with its vector embedding."""
+        statement = select(Message).where(Message.id == message_id)
+        result = await self.session.execute(statement)
+        message = result.scalar_one_or_none()
+        if message:
+            message.embedding = embedding
+            await self.session.flush()
+
+    async def search_similar_messages(
+        self,
+        user_id: UUID,
+        query_embedding: List[float],
+        limit: int = 5,
+        threshold: float = 0.7
+    ) -> List[Message]:
+        """Perform semantic search across all of a user's conversations."""
+        # Note: We join with Conversation to ensure we filter by the correct user_id
+        statement = (
+            select(Message)
+            .join(Conversation)
+            .where(Conversation.user_id == user_id)
+            .where(Message.embedding.cosine_distance(query_embedding) < (1 - threshold))
+            .order_by(Message.embedding.cosine_distance(query_embedding))
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())

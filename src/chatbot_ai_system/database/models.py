@@ -4,6 +4,7 @@ from typing import Optional, List, Any
 from sqlalchemy import String, DateTime, Text, ForeignKey, Integer, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from pgvector.sqlalchemy import Vector
 
 class Base(DeclarativeBase):
     pass
@@ -29,6 +30,10 @@ class Conversation(Base):
     is_archived: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
+    
+    # Layer 2 Memory: Summarization (Phase 2.7)
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    last_summarized_seq_id: Mapped[int] = mapped_column(Integer, default=0)
 
     user: Mapped["User"] = relationship(back_populates="conversations")
     messages: Mapped[List["Message"]] = relationship(back_populates="conversation", order_by="Message.sequence_number")
@@ -56,6 +61,10 @@ class Message(Base):
     model: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     latency_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     finish_reason: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # Phase 3: Vector Search (Cold Memory)
+    # 768 dimensions for nomic-embed-text
+    embedding: Mapped[Optional[List[float]]] = mapped_column(Vector(768), nullable=True)
 
     sequence_number: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

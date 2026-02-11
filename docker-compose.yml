@@ -38,7 +38,7 @@ services:
 
   # Future services (Phase 2+)
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: chatbot
       POSTGRES_USER: chatbot

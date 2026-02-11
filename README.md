@@ -98,8 +98,11 @@ flowchart TB
         Orchestrator["Chat Orchestrator"]
     end
 
-    subgraph Data["💾 Data Layer"]
+    subgraph Data["💾 Data Layer (Hybrid Memory)"]
         DB[(PostgreSQL\nDatabase)]
+        Vector["pgvector\n(Cold Memory)"]
+        Summary["Summarization\n(Warm Memory)"]
+        Window["Sliding Window\n(Hot Memory)"]
     end
     
     subgraph Tools["🛠️ Tool Layer (MCP)"]
@@ -110,7 +113,8 @@ flowchart TB
     
     subgraph LLM["🤖 LLM Layer"]
         Ollama["Ollama Server<br/>localhost:11434"]
-        Model["Llama 3.2:3b<br/>Tool-Capable Model"]
+        Inference["qwen2.5:14b<br/>Inference Model"]
+        Embed["nomic-embed-text<br/>Embedding Model"]
     end
     
     Browser --> UI
@@ -122,8 +126,12 @@ flowchart TB
     Orchestrator --> Provider
     Orchestrator --> Registry
     Orchestrator --> DB
+    Orchestrator --> Vector
+    Orchestrator --> Summary
+    Orchestrator --> Window
     Provider --> Ollama
-    Ollama --> Model
+    Ollama --> Inference
+    Ollama --> Embed
     Registry --> MCPClient
     MCPClient --> FS
     MCPClient --> Git
@@ -433,9 +441,11 @@ MCP_FETCH_ENABLE=true
 - [x] **Phase 1.2**: Decision Discipline (Smart Routing & Planning)
 - [x] **Phase 1.3**: Chat Orchestrator (9-Phase Architecture)
 - [x] **Phase 2**: Data Persistence & User Memory (PostgreSQL)
-- [ ] **Phase 2.5**: Observability & Schema Scaling
-- [ ] **Phase 3**: Multi-Provider Orchestration (OpenAI/Anthropic)
-- [ ] **Phase 4**: Semantic Caching & Vector Search
+- [x] **Phase 2.5**: Observability & Schema Scaling
+- [x] **Phase 2.6**: Sliding Window Context (Hot Memory)
+- [x] **Phase 2.7**: Conversation Summarization (Warm Memory)
+- [x] **Phase 3**: Vector Search (Cold Memory / RAG)
+- [ ] **Phase 4**: Multi-Provider Orchestration (OpenAI/Anthropic)
 - [ ] **Phase 5**: Authentication & Multi-Tenancy
 - [ ] **Phase 6**: Infrastructure & Deployment (Docker/K8s)
 

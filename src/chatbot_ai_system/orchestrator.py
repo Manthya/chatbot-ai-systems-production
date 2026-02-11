@@ -8,6 +8,8 @@ the interaction between the LLM and MCP tools.
 
 import logging
 import json
+import uuid
+from uuid import UUID
 from typing import List, Optional, Dict, Any, AsyncGenerator
 
 from chatbot_ai_system.models.schemas import (
@@ -19,6 +21,7 @@ from chatbot_ai_system.models.schemas import (
 from chatbot_ai_system.providers.ollama import OllamaProvider
 from chatbot_ai_system.tools.registry import ToolRegistry
 from chatbot_ai_system.tools import registry
+from chatbot_ai_system.services.embedding import EmbeddingService
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +42,7 @@ class ChatOrchestrator:
         self.registry = registry
         self.conversation_repo = conversation_repo
         self.memory_repo = memory_repo
+        self.embedding_service = EmbeddingService(base_url=provider.base_url)
 
     async def run(
         self,
@@ -67,6 +71,16 @@ class ChatOrchestrator:
         else:
             user_context = ""
 
+        # Fetch Conversation Summary (Phase 2.7)
+        try:
+            conv_summary_data = await self.conversation_repo.get_conversation_summary(conv_uuid)
+            conv_summary = conv_summary_data["summary"] if conv_summary_data else None
+            last_summarized_seq = conv_summary_data["last_summarized_seq_id"] if conv_summary_data else 0
+        except Exception as e:
+            logger.error(f"Failed to fetch conversation summary: {e}")
+            conv_summary = None
+            last_summarized_seq = 0
+
         # --- Phase 4: Intent Classification ---
         intent = await self._classify_intent(user_input, model)
         logger.info(f"Phase 4: Classified intent as '{intent}'")
@@ -74,6 +88,27 @@ class ChatOrchestrator:
         # --- Phase 5: Tool Scope Reduction ---
         tools = await self._filter_tools(intent, user_input)
         logger.info(f"Phase 5: Selected tools: {[t['function']['name'] for t in tools]}")
+
+        # --- Phase 5.5: Semantic Memory Retrieval (Phase 3) ---
+        semantic_context = ""
+        try:
+            query_embedding = await self.embedding_service.generate_embedding(user_input)
+            if query_embedding and user_id:
+                similar_msgs = await self.conversation_repo.search_similar_messages(
+                    uuid.UUID(user_id), 
+                    query_embedding, 
+                    limit=3
+                )
+                if similar_msgs:
+                    # Filter out messages that might be in the current sliding window 
+                    # (though we don't have the history loaded yet, we can filter by ID later if needed)
+                    # For now, just render them
+                    semantic_context = "\nRelevant Past Conversation Context:\n"
+                    for m in similar_msgs:
+                        semantic_context += f"- {m.role}: {m.content}\n"
+                    logger.info(f"Phase 5.5: Retrieved {len(similar_msgs)} similar messages.")
+        except Exception as e:
+            logger.error(f"Semantic memory retrieval failed: {e}")
 
         # Prepare messages
         messages = list(conversation_history)
@@ -83,6 +118,12 @@ class ChatOrchestrator:
         system_prompt = self._get_system_prompt(intent, bool(tools))
         if user_context:
             system_prompt += user_context
+        
+        if semantic_context:
+            system_prompt += semantic_context
+        
+        if conv_summary:
+            system_prompt += f"\n\nPrevious Conversation Summary:\n{conv_summary}\n"
 
         if messages and messages[0].role == MessageRole.SYSTEM:
             messages[0] = ChatMessage(role=MessageRole.SYSTEM, content=system_prompt)
@@ -148,6 +189,14 @@ class ChatOrchestrator:
                 model=model
             )
             
+            # Background embedding (Phase 3)
+            import asyncio
+            asyncio.create_task(self._embed_message(msg.id, full_content))
+            
+            # Also embed the user message that started this turn
+            # Sequence for user message was current_seq - 1 (or we can find it)
+            asyncio.create_task(self._embed_user_message(conv_uuid, current_seq - 1))
+            
             # Execute tools
             for tool_call in current_tool_calls:
                 tool_name = tool_call.function.name
@@ -202,6 +251,9 @@ class ChatOrchestrator:
                 token_count_completion=self.last_usage.completion_tokens if self.last_usage else None,
                 model=model
             )
+            # Background embedding (Phase 3)
+            import asyncio
+            asyncio.create_task(self._embed_message(msg.id, synthesis_content))
             
         else:
              # Persist final response
@@ -216,6 +268,126 @@ class ChatOrchestrator:
                 token_count_completion=self.last_usage.completion_tokens if self.last_usage else None,
                 model=model
              )
+             # Background embedding (Phase 3)
+             import asyncio
+             asyncio.create_task(self._embed_message(msg.id, full_content))
+             
+             # Also embed user message
+             asyncio.create_task(self._embed_user_message(conv_uuid, current_seq - 1))
+             # Background embedding (Phase 3)
+             import asyncio
+             asyncio.create_task(self._embed_message(msg.id, full_content))
+             
+        # --- Phase 9: Background Summarization (Phase 2.7) ---
+        # Trigger if more than 20 messages have passed since last summary
+        if (current_seq - last_summarized_seq) >= 20:
+             # We should run this in background, but for now we'll await it to ensure it completes
+             # In a real async app, use asyncio.create_task() if fire-and-forget is safe
+             # For data integrity, running it here is safer (though adds latency to the FINAL chunk)
+             # Let's use asyncio.create_task to not block response?
+             # But we need to use 'await' safely. 
+             # Let's await it to be safe for now, latency hit happens only every 20 turns.
+             await self._summarize_conversation(conv_uuid, current_seq, last_summarized_seq, model)
+
+    async def _summarize_conversation(self, conversation_id: Any, current_seq: int, last_seq: int, model: str):
+        """
+        Summarize the conversation from last_seq to current_seq.
+        """
+        try:
+             # Fetch unsummarized messages
+             # We need a repo method to fetch range.
+             # Or we just fetch recent (limit=current-last)
+             limit = current_seq - last_seq
+             # Limit might be large if we haven't summarized in a while.
+             # Let's cap it at 100 to avoid context blowup during summarization
+             fetch_limit = min(limit, 100)
+             
+             recent_msgs = await self.conversation_repo.get_recent_messages(conversation_id, limit=fetch_limit)
+             # recent_msgs are reversed (newest first). Re-reverse to chronological
+             messages_to_summarize = list(reversed(recent_msgs))
+             
+             text_to_summarize = "\n".join([f"{m.role}: {m.content}" for m in messages_to_summarize])
+             
+             summary_prompt = (
+                 "Summarize the following conversation segment efficiently. "
+                 "Focus on key facts, user preferences, and important decisions. "
+                 "Do not lose important details.\n\n"
+                 f"{text_to_summarize}"
+             )
+             
+             # Call LLM for summary
+             response = await self.provider.complete(
+                 messages=[ChatMessage(role=MessageRole.USER, content=summary_prompt)],
+                 model=model,
+                 max_tokens=200,
+                 temperature=0.3
+             )
+             
+             new_segment_summary = response.message.content
+             
+             # Update DB
+             # If existing summary exists, append/merge?
+             # For MVP: "Previous Summary + New Segment" -> Updated Summary
+             # But that grows indefinitely.
+             # Better: "Update the summary with new info".
+             
+             current_summary_data = await self.conversation_repo.get_conversation_summary(conversation_id)
+             old_summary = current_summary_data["summary"] if current_summary_data else ""
+             
+             if old_summary:
+                 update_prompt = (
+                     "Here is the previous conversation summary:\n"
+                     f"{old_summary}\n\n"
+                     "Here is the new conversation segment:\n"
+                     f"{new_segment_summary}\n\n"
+                     "Create a consolidated summary of the entire conversation. Keep it concise."
+                 )
+                 response = await self.provider.complete(
+                     messages=[ChatMessage(role=MessageRole.USER, content=update_prompt)],
+                     model=model,
+                     max_tokens=300,
+                     temperature=0.3
+                 )
+                 final_summary = response.message.content
+             else:
+                 final_summary = new_segment_summary
+                 
+             await self.conversation_repo.update_summary(conversation_id, final_summary, current_seq)
+             logger.info(f"Updated summary for conversation {conversation_id} at seq {current_seq}")
+             
+        except Exception as e:
+             logger.error(f"Summarization failed: {e}")
+
+    async def _embed_message(self, message_id: Any, content: str):
+        """Generate and save embedding for a message in the background."""
+        try:
+            embedding = await self.embedding_service.generate_embedding(content)
+            if embedding:
+                await self.conversation_repo.update_message_embedding(message_id, embedding)
+                logger.info(f"Generated embedding for message {message_id}")
+        except Exception as e:
+            logger.error(f"Failed to generate embedding for message {message_id}: {e}")
+
+    async def _embed_user_message(self, conversation_id: UUID, sequence_number: int):
+        """Find the user message by sequence number and embed it."""
+        try:
+            # We need to find the message in DB
+            from sqlalchemy import select
+            from chatbot_ai_system.database.models import Message
+            
+            statement = (
+                select(Message)
+                .where(Message.conversation_id == conversation_id)
+                .where(Message.sequence_number == sequence_number)
+                .where(Message.role == MessageRole.USER)
+            )
+            result = await self.conversation_repo.session.execute(statement)
+            message = result.scalar_one_or_none()
+            
+            if message and not message.embedding:
+                await self._embed_message(message.id, message.content)
+        except Exception as e:
+            logger.error(f"Failed to embed user message at seq {sequence_number}: {e}")
 
     async def _classify_intent(self, user_input: str, model: str) -> str:
         """

@@ -17,5 +17,6 @@ mcp
 sqlalchemy
 alembic
 asyncpg
+pgvector
 psycopg2-binary>=0.1.0
 greenlet
