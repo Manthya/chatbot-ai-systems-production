@@ -36,4 +36,34 @@ The implementation has been verified with both automated scripts and manual scen
 -   **Efficiency**: General queries bypass tool processing for lower latency.
 
 ## Usage
-The Orchestrator is active by default for all chat endpoints. No special configuration is required beyond ensuring the MCP servers and Ollama are running.
+
+## Deep Dive: MCP Tool Lifecycle
+
+To understand how the system interacts with external tools, here is the detailed lifecycle of an MCP tool from startup to execution.
+
+### 1. Startup & Discovery
+When the backend starts (`src/chatbot_ai_system/server/main.py`), it initializes the MCP clients and discovers available tools.
+
+1.  **Initialization**: `startup_event` creates `MCPClient` instances for Filesystem, Git, and Fetch.
+2.  **Connection**: Each client spawns the corresponding Node.js MCP server process (e.g., `npx @modelcontextprotocol/server-filesystem`) and establishes a standard input/output (stdio) connection.
+3.  **Registration**: Clients are registered with the `ToolRegistry` (`src/chatbot_ai_system/tools/registry.py`).
+4.  **Discovery (List Tools)**:
+    -   The registry calls `refresh_remote_tools()`.
+    -   It iterates through each client and sends a `tools/list` JSON-RPC request.
+    -   The MCP server returns a list of available tools and their JSON schemas.
+    -   These tool definitions are **cached in memory** within the `ToolRegistry`.
+
+### 2. Runtime Execution
+When a user sends a request that requires a tool, the specific flow is:
+
+1.  **Filter**: The Orchestrator asks `registry.get_ollama_tools(query)`.
+2.  **Select**: The registry filters cached tools based on the query keywords (e.g., "git" keywords -> Git tools).
+3.  **Plan**: The LLM receives the filtered tool definitions in the system prompt.
+4.  **Call**: The LLM decides to use a tool and outputs a JSON tool call (e.g., `git_status`).
+5.  **Retrieve**: The Orchestrator requests the tool object from the registry via `registry.get_tool("git_status")`.
+6.  **Execute**:
+    -   The registry returns a `RemoteMCPTool` wrapper.
+    -   The Orchestrator calls `tool.run(**args)`.
+    -   The wrapper delegates to its `MCPClient`.
+    -   The client sends a `tools/call` JSON-RPC request to the persistent Node.js process.
+7.  **Result**: The MCP server executes the command and returns the result, which is passed back to the LLM.

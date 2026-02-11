@@ -144,7 +144,45 @@ sequenceDiagram
     B-->>U: Final ChatResponse JSON
 ```
 
-### Chat State Flow
+### MCP Integration Flow
+
+The system uses the Model Context Protocol (MCP) to connect the LLM with external tools safe and effectively.
+
+#### 1. Startup: Tool Discovery
+When the server boots, it connects to local MCP servers to load tool schemas.
+
+```mermaid
+sequenceDiagram
+    participant M as Main (FastAPI)
+    participant R as Registry
+    participant C as MCP Client
+    participant S as MCP Server (Node.js)
+
+    M->>C: Initialize Client (e.g., Filesystem)
+    C->>S: Spawn Process (stdio)
+    M->>R: Register Client
+    M->>R: Refresh Tools
+    R->>S: JSON-RPC tools/list
+    S-->>R: Tool Schemas (Cached in Memory)
+```
+
+#### 2. Runtime: Tool Execution
+When the Orchestrator decides a tool call is needed:
+
+```mermaid
+sequenceDiagram
+    participant O as Orchestrator
+    participant R as Registry
+    participant C as MCP Client
+    participant S as MCP Server
+
+    O->>R: get_tool("git_status")
+    R-->>O: RemoteMCPTool Instance
+    O->>C: call_tool("git_status", args)
+    C->>S: JSON-RPC tools/call
+    S-->>C: Result Output
+    C-->>O: Return Result to LLM
+```
 
 ```mermaid
 stateDiagram-v2
