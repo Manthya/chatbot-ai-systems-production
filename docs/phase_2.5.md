@@ -37,7 +37,25 @@ We implemented three distinct layers of memory to balance fidelity, context limi
 
 ---
 
-## 3. Infrastructure Updates
+## 3. How a User Query Uses the 3-Layer Architecture
+
+When a user sends a message, the system intelligently combines all three layers to provide a response that is both fast and contextually deep.
+
+### Step-by-Step Flow:
+1.  **Retrieve Hot Memory (Window)**:
+    *   The system immediately pulls the **last 50 messages** from the database. This ensures the bot remembers what you just said a few seconds ago with 100% accuracy.
+2.  **Retrieve Warm Memory (Summary)**:
+    *   The system looks for the most recent **Conversation Summary**. Even if the conversation has 1,000 messages, the summary tells the bot the "story so far" in just a few sentences.
+3.  **Retrieve Cold Memory (Vector Search)**:
+    *   The system converts the user's question into a "vector" and searches millions of past messages for a match. If you ask about a specific detail from last week, this is how the bot finds it.
+4.  **The LLM Brain**:
+    *   The bot receives: **[Summary] + [Retrieved Facts] + [Last 50 Messages]**. It uses this combined context to write a perfect answer.
+5.  **Background Updates**:
+    *   Once the answer is sent, the system updates the "Cold Memory" with the new message and checks if it's time to refresh the "Warm Memory" summary.
+
+---
+
+## 4. Infrastructure Updates
 *   **Vector Database:** Migrated to `pgvector/pgvector:pg16` Docker image.
 *   **Embedding Model:** Integrated `nomic-embed-text` via Ollama for efficient local embeddings.
 *   **Migrations:** Successfully applied schema changes for `summary`, `last_summarized_seq_id`, and `embedding` columns.
