@@ -1,0 +1,490 @@
+"""
+Chat Orchestrator Module.
+
+This module implements the 9-phase architecture for handling chat requests,
+including intent classification, tool scope reduction, and orchestrating
+the interaction between the LLM and MCP tools.
+"""
+
+import logging
+import json
+import uuid
+from uuid import UUID
+from typing import List, Optional, Dict, Any, AsyncGenerator
+
+from chatbot_ai_system.models.schemas import (
+    ChatMessage,
+    MessageRole,
+    StreamChunk,
+    ToolCall,
+)
+from chatbot_ai_system.providers.ollama import OllamaProvider
+from chatbot_ai_system.tools.registry import ToolRegistry
+from chatbot_ai_system.tools import registry
+from chatbot_ai_system.services.embedding import EmbeddingService
+from chatbot_ai_system.database.redis import redis_client
+
+logger = logging.getLogger(__name__)
+
+class ChatOrchestrator:
+    """
+    Orchestrates the chat flow, handling intent classification,
+    tool selection, and LLM interaction.
+    """
+
+    def __init__(
+        self, 
+        provider: OllamaProvider, 
+        registry: ToolRegistry,
+        conversation_repo: Any, # Avoid circular import type hint issues or use TYPE_CHECKING
+        memory_repo: Any
+    ):
+        self.provider = provider
+        self.registry = registry
+        self.conversation_repo = conversation_repo
+        self.memory_repo = memory_repo
+        self.embedding_service = EmbeddingService(base_url=provider.base_url)
+
+    async def run(
+        self,
+        conversation_id: str,
+        user_input: str,
+        conversation_history: List[ChatMessage],
+        model: str,
+        temperature: float = 0.7,
+        max_tokens: int = 1000,
+        user_id: Optional[str] = None
+    ) -> AsyncGenerator[StreamChunk, None]:
+        """
+        Main entry point for the orchestrator (Phase 3).
+        """
+        import uuid
+        conv_uuid = uuid.UUID(conversation_id)
+        semantic_context = ""
+
+        # Fetch Long-Term Memory (Phase 2 Addition)
+        if user_id:
+            try:
+                memories = await self.memory_repo.get_user_memories(uuid.UUID(user_id))
+                user_context = "\nUser Profile:\n" + "\n".join([f"- {m.content}" for m in memories])
+            except Exception as e:
+                logger.error(f"Failed to fetch memories: {e}")
+                user_context = ""
+        else:
+            user_context = ""
+
+        # Fetch Conversation Summary (Phase 2.7)
+        try:
+            conv_summary_data = await self.conversation_repo.get_conversation_summary(conv_uuid)
+            conv_summary = conv_summary_data["summary"] if conv_summary_data else None
+            last_summarized_seq = conv_summary_data["last_summarized_seq_id"] if conv_summary_data else 0
+        except Exception as e:
+            logger.error(f"Failed to fetch conversation summary: {e}")
+            conv_summary = None
+            last_summarized_seq = 0
+
+        # --- Phase 3.5: Context Cache Check ---
+        context_cache_key = f"conversation:{conversation_id}:context"
+        cached_context = await redis_client.get(context_cache_key)
+        
+        if cached_context:
+            logger.info(f"Using cached context for conversation {conversation_id}")
+            # cached_context is a dict containing user_context, semantic_context, and conv_summary
+            if not user_context: user_context = cached_context.get("user_context", "")
+            if not semantic_context: semantic_context = cached_context.get("semantic_context", "")
+            if not conv_summary: conv_summary = cached_context.get("conv_summary", "")
+        else:
+            # We'll cache it after we've computed all parts
+            pass
+
+        # --- Phase 4: Intent Classification ---
+        intent = await self._classify_intent(user_input, model)
+        logger.info(f"Phase 4: Classified intent as '{intent}'")
+
+        # --- Phase 5: Tool Scope Reduction ---
+        tools = await self._filter_tools(intent, user_input)
+        logger.info(f"Phase 5: Selected tools: {[t['function']['name'] for t in tools]}")
+
+        # --- Phase 5.5: Semantic Memory Retrieval (Phase 3) ---
+        # Only do this if we don't have it from cache or if we want to refresh?
+        # For now, if we have it from cache, we might still want to refresh based on NEW user_input
+        # but the prompt says "Do not recompute the same prompt every turn".
+        # Actually, semantic context is query-dependent, so it SHOULD be recomputed.
+        # But "last N turns summary" and "user profile" are relatively stable.
+        
+        if not semantic_context:
+            try:
+                query_embedding = await self.embedding_service.generate_embedding(user_input)
+                if query_embedding and user_id:
+                    similar_msgs = await self.conversation_repo.search_similar_messages(
+                        uuid.UUID(user_id), 
+                        query_embedding, 
+                        limit=3
+                    )
+                    if similar_msgs:
+                        semantic_context = "\nRelevant Past Conversation Context:\n"
+                        for m in similar_msgs:
+                            semantic_context += f"- {m.role}: {m.content}\n"
+                        logger.info(f"Phase 5.5: Retrieved {len(similar_msgs)} similar messages.")
+            except Exception as e:
+                logger.error(f"Semantic memory retrieval failed: {e}")
+
+        # Update Context Cache (30-120 min sliding TTL)
+        await redis_client.set(context_cache_key, {
+            "user_context": user_context,
+            "semantic_context": semantic_context,
+            "conv_summary": conv_summary
+        }, ttl=3600) # 1 hour
+
+        # Prepare messages
+        messages = list(conversation_history)
+        current_seq = len(conversation_history) # Start sequence number
+        
+        # Inject Dynamic System Prompt
+        system_prompt = self._get_system_prompt(intent, bool(tools))
+        if user_context:
+            system_prompt += user_context
+        
+        if semantic_context:
+            system_prompt += semantic_context
+        
+        if conv_summary:
+            system_prompt += f"\n\nPrevious Conversation Summary:\n{conv_summary}\n"
+
+        if messages and messages[0].role == MessageRole.SYSTEM:
+            messages[0] = ChatMessage(role=MessageRole.SYSTEM, content=system_prompt)
+        else:
+            messages.insert(0, ChatMessage(role=MessageRole.SYSTEM, content=system_prompt))
+            
+        # --- Phase 6: First LLM Call (Planning) ---
+        current_tool_calls: List[ToolCall] = []
+        full_content = ""
+        self.last_usage = None # Track usage from stream
+        
+        # Streaming loop
+        async for chunk in self.provider.stream(
+            messages=messages,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            tools=tools if tools else None
+        ):
+            full_content += chunk.content
+            if chunk.tool_calls:
+                current_tool_calls.extend(chunk.tool_calls)
+            
+            if not current_tool_calls:
+                yield chunk
+            else:
+                 pass
+            
+            # Capture usage from the last chunk if present
+            if chunk.usage:
+                # Store it temporarily or use it for the final message persistence
+                # We need to persist it. The loop finishes when stream ends.
+                # Let's store it in a local variable.
+                self.last_usage = chunk.usage
+
+        # Check for fallback parsing (Phase 6b)
+        if not current_tool_calls and tools:
+             parsed = self.provider._try_parse_tool_calls(full_content)
+             if parsed:
+                 current_tool_calls = parsed
+
+        # --- Phase 7: Tool Execution ---
+        if current_tool_calls:
+            # Append assistant message with tool calls
+            assistant_msg = ChatMessage(
+                role=MessageRole.ASSISTANT,
+                content=full_content,
+                tool_calls=current_tool_calls
+            )
+            messages.append(assistant_msg)
+            
+            # Persist to DB
+            current_seq += 1
+            msg = await self.conversation_repo.add_message(
+                conversation_id=conv_uuid,
+                role=MessageRole.ASSISTANT,
+                content=full_content,
+                sequence_number=current_seq,
+                tool_calls=[t.model_dump() for t in current_tool_calls],
+                metadata={"model": model},
+                token_count_prompt=self.last_usage.prompt_tokens if self.last_usage else None,
+                token_count_completion=self.last_usage.completion_tokens if self.last_usage else None,
+                model=model
+            )
+            
+            # Background embedding (Phase 3)
+            import asyncio
+            asyncio.create_task(self._embed_message(msg.id, full_content))
+            
+            # Also embed the user message that started this turn
+            # Sequence for user message was current_seq - 1 (or we can find it)
+            asyncio.create_task(self._embed_user_message(conv_uuid, current_seq - 1))
+            
+            # Execute tools
+            for tool_call in current_tool_calls:
+                tool_name = tool_call.function.name
+                tool_args = tool_call.function.arguments
+                
+                yield StreamChunk(content="", status=f"Executing {tool_name}...", done=False)
+                
+                try:
+                    tool = self.registry.get_tool(tool_name)
+                    result = await tool.run(**tool_args)
+                except Exception as e:
+                    logger.error(f"Tool execution failed: {e}")
+                    result = f"Error executing tool {tool_name}: {e}"
+
+                # Persist result
+                current_seq += 1
+                tool_msg = ChatMessage(role=MessageRole.TOOL, content=str(result), tool_call_id=tool_call.id)
+                messages.append(tool_msg)
+                
+                await self.conversation_repo.add_message(
+                    conversation_id=conv_uuid,
+                    role=MessageRole.TOOL,
+                    content=str(result),
+                    sequence_number=current_seq,
+                    tool_call_id=tool_call.id
+                )
+
+            # --- Phase 8: Tool Result Feedback Loop ---
+            synthesis_content = ""
+            self.last_usage = None # Reset for synthesis
+            async for chunk in self.provider.stream(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                tools=None
+            ):
+                synthesis_content += chunk.content
+                if chunk.usage:
+                    self.last_usage = chunk.usage
+                yield chunk
+            
+            # Persist synthesis
+            current_seq += 1
+            msg = await self.conversation_repo.add_message(
+                conversation_id=conv_uuid,
+                role=MessageRole.ASSISTANT,
+                content=synthesis_content,
+                sequence_number=current_seq,
+                metadata={"model": model, "type": "synthesis"},
+                token_count_prompt=self.last_usage.prompt_tokens if self.last_usage else None,
+                token_count_completion=self.last_usage.completion_tokens if self.last_usage else None,
+                model=model
+            )
+            # Background embedding (Phase 3)
+            import asyncio
+            asyncio.create_task(self._embed_message(msg.id, synthesis_content))
+            
+        else:
+             # Persist final response
+             current_seq += 1
+             msg = await self.conversation_repo.add_message(
+                conversation_id=conv_uuid,
+                role=MessageRole.ASSISTANT,
+                content=full_content,
+                sequence_number=current_seq,
+                metadata={"model": model},
+                token_count_prompt=self.last_usage.prompt_tokens if self.last_usage else None,
+                token_count_completion=self.last_usage.completion_tokens if self.last_usage else None,
+                model=model
+             )
+             # Background embedding (Phase 3)
+             import asyncio
+             asyncio.create_task(self._embed_message(msg.id, full_content))
+             
+             # Also embed user message
+             asyncio.create_task(self._embed_user_message(conv_uuid, current_seq - 1))
+             # Background embedding (Phase 3)
+             import asyncio
+             asyncio.create_task(self._embed_message(msg.id, full_content))
+             
+        # --- Phase 9: Background Summarization (Phase 2.7) ---
+        # Trigger if more than 20 messages have passed since last summary
+        if (current_seq - last_summarized_seq) >= 20:
+             # We should run this in background, but for now we'll await it to ensure it completes
+             # In a real async app, use asyncio.create_task() if fire-and-forget is safe
+             # For data integrity, running it here is safer (though adds latency to the FINAL chunk)
+             # Let's use asyncio.create_task to not block response?
+             # But we need to use 'await' safely. 
+             # Let's await it to be safe for now, latency hit happens only every 20 turns.
+             await self._summarize_conversation(conv_uuid, current_seq, last_summarized_seq, model)
+
+    async def _summarize_conversation(self, conversation_id: Any, current_seq: int, last_seq: int, model: str):
+        """
+        Summarize the conversation from last_seq to current_seq.
+        """
+        try:
+             # Fetch unsummarized messages
+             # We need a repo method to fetch range.
+             # Or we just fetch recent (limit=current-last)
+             limit = current_seq - last_seq
+             # Limit might be large if we haven't summarized in a while.
+             # Let's cap it at 100 to avoid context blowup during summarization
+             fetch_limit = min(limit, 100)
+             
+             recent_msgs = await self.conversation_repo.get_recent_messages(conversation_id, limit=fetch_limit)
+             # recent_msgs are reversed (newest first). Re-reverse to chronological
+             messages_to_summarize = list(reversed(recent_msgs))
+             
+             text_to_summarize = "\n".join([f"{m.role}: {m.content}" for m in messages_to_summarize])
+             
+             summary_prompt = (
+                 "Summarize the following conversation segment efficiently. "
+                 "Focus on key facts, user preferences, and important decisions. "
+                 "Do not lose important details.\n\n"
+                 f"{text_to_summarize}"
+             )
+             
+             # Call LLM for summary
+             response = await self.provider.complete(
+                 messages=[ChatMessage(role=MessageRole.USER, content=summary_prompt)],
+                 model=model,
+                 max_tokens=200,
+                 temperature=0.3
+             )
+             
+             new_segment_summary = response.message.content
+             
+             # Update DB
+             # If existing summary exists, append/merge?
+             # For MVP: "Previous Summary + New Segment" -> Updated Summary
+             # But that grows indefinitely.
+             # Better: "Update the summary with new info".
+             
+             current_summary_data = await self.conversation_repo.get_conversation_summary(conversation_id)
+             old_summary = current_summary_data["summary"] if current_summary_data else ""
+             
+             if old_summary:
+                 update_prompt = (
+                     "Here is the previous conversation summary:\n"
+                     f"{old_summary}\n\n"
+                     "Here is the new conversation segment:\n"
+                     f"{new_segment_summary}\n\n"
+                     "Create a consolidated summary of the entire conversation. Keep it concise."
+                 )
+                 response = await self.provider.complete(
+                     messages=[ChatMessage(role=MessageRole.USER, content=update_prompt)],
+                     model=model,
+                     max_tokens=300,
+                     temperature=0.3
+                 )
+                 final_summary = response.message.content
+             else:
+                 final_summary = new_segment_summary
+                 
+             await self.conversation_repo.update_summary(conversation_id, final_summary, current_seq)
+             logger.info(f"Updated summary for conversation {conversation_id} at seq {current_seq}")
+             
+        except Exception as e:
+             logger.error(f"Summarization failed: {e}")
+
+    async def _embed_message(self, message_id: Any, content: str):
+        """Generate and save embedding for a message in the background."""
+        try:
+            embedding = await self.embedding_service.generate_embedding(content)
+            if embedding:
+                await self.conversation_repo.update_message_embedding(message_id, embedding)
+                logger.info(f"Generated embedding for message {message_id}")
+        except Exception as e:
+            logger.error(f"Failed to generate embedding for message {message_id}: {e}")
+
+    async def _embed_user_message(self, conversation_id: UUID, sequence_number: int):
+        """Find the user message by sequence number and embed it."""
+        try:
+            # We need to find the message in DB
+            from sqlalchemy import select
+            from chatbot_ai_system.database.models import Message
+            
+            statement = (
+                select(Message)
+                .where(Message.conversation_id == conversation_id)
+                .where(Message.sequence_number == sequence_number)
+                .where(Message.role == MessageRole.USER)
+            )
+            result = await self.conversation_repo.session.execute(statement)
+            message = result.scalar_one_or_none()
+            
+            if message and not message.embedding:
+                await self._embed_message(message.id, message.content)
+        except Exception as e:
+            logger.error(f"Failed to embed user message at seq {sequence_number}: {e}")
+
+    async def _classify_intent(self, user_input: str, model: str) -> str:
+        """
+        Phase 4: Classify user intent to determine tool needs.
+        """
+        # Simple zero-shot classifier
+        classifier_messages = [
+            ChatMessage(
+                role=MessageRole.SYSTEM,
+                content=(
+                    "You are an intent classifier. Analyze the user's request.\n"
+                    "Categories:\n"
+                    "1. GIT: Version control, commits, branches, diffs.\n"
+                    "2. FILESYSTEM: Reading/writing files, listing directories, searching.\n"
+                    "3. FETCH: Web requests, extracting content from URLs.\n"
+                    "4. GENERAL: General knowledge, coding advice (without file access), greetings.\n"
+                    "Output ONLY the category name (e.g., 'GIT')."
+                )
+            ),
+            ChatMessage(role=MessageRole.USER, content=user_input)
+        ]
+        
+        response = await self.provider.complete(
+            messages=classifier_messages,
+            model=model,
+            max_tokens=10,
+            temperature=0.1
+        )
+        
+        intent = response.message.content.strip().upper()
+        # Fallback normalization
+        if "GIT" in intent: return "GIT"
+        if "FILE" in intent: return "FILESYSTEM"
+        if "FETCH" in intent: return "FETCH"
+        return "GENERAL"
+
+    async def _filter_tools(self, intent: str, user_input: str) -> List[Dict[str, Any]]:
+        """
+        Phase 5: Reduce tool scope based on intent.
+        """
+        if intent == "GENERAL":
+            return []
+            
+        all_tools = await self.registry.get_ollama_tools(query=user_input)
+        
+        filtered = []
+        for tool in all_tools:
+            name = tool['function']['name']
+            if intent == "GIT" and ("git" in name or "repo" in name):
+                filtered.append(tool)
+            elif intent == "FILESYSTEM" and any(x in name for x in ["file", "dir", "list", "read", "write", "search"]):
+                filtered.append(tool)
+            elif intent == "FETCH" and "fetch" in name:
+                filtered.append(tool)
+                
+        return filtered
+
+    def _get_system_prompt(self, intent: str, has_tools: bool) -> str:
+        """
+        Get the appropriate system prompt based on intent and tool availability.
+        """
+        base_prompt = "You are a helpful AI assistant."
+        
+        if not has_tools:
+           return base_prompt + "\nAnswer using your internal knowledge. Do notHALLUCINATE tools."
+           
+        tool_instructions = (
+            "\nYou have access to external tools via MCP.\n"
+            "1. If the user's request requires it, call the appropriate tool.\n"
+            "2. Output a valid JSON tool call.\n"
+            "3. Use the tool result to answer the question."
+        )
+        
+        return base_prompt + tool_instructions

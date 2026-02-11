@@ -1,0 +1,300 @@
+INFO:     Will watch for changes in these directories: ['/Users/mk/Documents/chatbot-ai-systems-production/src']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [12609] using WatchFiles
+INFO:     Started server process [12670]
+INFO:     Waiting for application startup.
+2026-02-10 19:17:56,024 - chatbot_ai_system.server.main - INFO - Starting Chatbot AI System v0.1.0
+2026-02-10 19:17:56,024 - chatbot_ai_system.server.main - INFO - Debug mode: True
+2026-02-10 19:17:56,024 - chatbot_ai_system.server.main - INFO - Default LLM provider: ollama
+2026-02-10 19:17:56,024 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server filesystem...
+Secure MCP Filesystem Server running on stdio
+2026-02-10 19:17:57,138 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server filesystem
+2026-02-10 19:17:57,139 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for filesystem...
+Client does not support MCP Roots, using allowed directories set from server args: [ '/Users/mk/Documents/chatbot-ai-systems-production/src' ]
+2026-02-10 19:17:57,142 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for filesystem: 14 tools found
+2026-02-10 19:17:57,142 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server git...
+2026-02-10 19:17:58,822 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server git
+2026-02-10 19:17:58,822 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for git...
+2026-02-10 19:17:58,831 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for git: 25 tools found
+2026-02-10 19:17:58,832 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server fetch...
+2026-02-10 19:18:01,320 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server fetch
+2026-02-10 19:18:01,320 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for fetch...
+2026-02-10 19:18:01,322 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for fetch: 4 tools found
+2026-02-10 19:18:01,322 - chatbot_ai_system.server.main - INFO - MCP servers registered and tools refreshed
+INFO:     Application startup complete.
+INFO:     127.0.0.1:62194 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:62202 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:62203 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:62205 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:62209 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+2026-02-10 19:18:15,161 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'What files are in the current directory?'
+2026-02-10 19:18:19,498 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 19:18:19,499 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: USE_TOOL...
+2026-02-10 19:18:19,499 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: USE_TOOL
+2026-02-10 19:18:19,499 - chatbot_ai_system.server.routes - INFO - PLANNING: Tools exposed: ['read_file', 'write_file', 'list_directory', 'search_files', 'get_file_info']
+2026-02-10 19:18:21,823 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 19:18:21,860 - chatbot_ai_system.server.routes - INFO - EXECUTING TOOL: list_directory
+2026-02-10 19:18:22,433 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 19:18:24,531 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: TOOL
+2026-02-10 19:18:24,532 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:62244 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+2026-02-10 19:18:24,534 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'hii'
+2026-02-10 19:18:24,937 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 19:18:24,938 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: NO_TOOL...
+2026-02-10 19:18:24,938 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: NO_TOOL
+2026-02-10 19:18:25,216 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 19:18:25,524 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: MODEL
+2026-02-10 19:18:25,524 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:49987 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection closed
+2026-02-10 21:20:46,653 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     127.0.0.1:49989 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:50010 - "HEAD /docs HTTP/1.1" 200 OK
+2026-02-10 21:24:30,703 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'hi'
+2026-02-10 21:24:35,463 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:24:35,466 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: NO_TOOL...
+2026-02-10 21:24:35,466 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: NO_TOOL
+2026-02-10 21:24:35,770 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:24:36,014 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: MODEL
+2026-02-10 21:24:43,934 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'hello budddy'
+2026-02-10 21:24:44,682 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:24:44,683 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: NO_TOOL...
+2026-02-10 21:24:44,683 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: NO_TOOL
+2026-02-10 21:24:44,942 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:24:45,856 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: MODEL
+2026-02-10 21:25:10,437 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'i want to about mcp protocall by anthropic'
+2026-02-10 21:25:11,087 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:25:11,087 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: NO_TOOL...
+2026-02-10 21:25:11,087 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: NO_TOOL
+2026-02-10 21:25:11,426 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:25:19,548 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: MODEL
+2026-02-10 21:26:22,818 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'can you give me link of some blogs which shows mcp documentation'
+2026-02-10 21:26:23,620 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:26:23,621 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: USE_TOOL...
+2026-02-10 21:26:23,621 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: USE_TOOL
+2026-02-10 21:26:23,634 - chatbot_ai_system.server.routes - INFO - PLANNING: Tools exposed: ['check_repo_status', 'git_add', 'git_branch', 'git_checkout', 'git_cherry_pick']
+2026-02-10 21:26:29,234 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:26:29,271 - chatbot_ai_system.server.routes - INFO - EXECUTING TOOL: git_branch
+2026-02-10 21:26:30,710 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:26:39,196 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: TOOL
+2026-02-10 21:28:53,173 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+2026-02-10 21:28:53,179 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+2026-02-10 21:28:53,198 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+2026-02-10 21:31:42,494 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'i am talking about model context protocall'
+2026-02-10 21:31:46,721 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:31:46,721 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: NO_TOOL...
+2026-02-10 21:31:46,721 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: NO_TOOL
+2026-02-10 21:31:48,607 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:31:57,400 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: MODEL
+2026-02-10 21:32:32,991 - chatbot_ai_system.server.routes - INFO - PLANNING: Assessing need for tools for query: 'can you provide me some good github repo for using mcp'
+2026-02-10 21:32:33,890 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:32:33,890 - chatbot_ai_system.providers.ollama - INFO - Ollama response content: USE_TOOL...
+2026-02-10 21:32:33,890 - chatbot_ai_system.server.routes - INFO - PLANNING DECISION: USE_TOOL
+2026-02-10 21:32:33,891 - chatbot_ai_system.server.routes - INFO - PLANNING: Tools exposed: ['check_repo_status', 'git_add', 'git_branch', 'git_checkout', 'git_cherry_pick']
+2026-02-10 21:32:41,854 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:32:41,894 - chatbot_ai_system.server.routes - INFO - EXECUTING TOOL: git_branch
+2026-02-10 21:32:44,846 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-10 21:32:57,334 - chatbot_ai_system.server.routes - INFO - REQUEST COMPLETE. Source: TOOL
+WARNING:  WatchFiles detected changes in 'chatbot_ai_system/orchestrator.py'. Reloading...
+INFO:     Shutting down
+2026-02-10 21:56:53,417 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+2026-02-10 21:56:53,438 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+2026-02-10 21:56:53,522 - chatbot_ai_system.server.main - INFO - Shutting down Chatbot AI System
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12670]
+INFO:     Started server process [22973]
+INFO:     Waiting for application startup.
+2026-02-10 21:56:54,530 - chatbot_ai_system.server.main - INFO - Starting Chatbot AI System v0.1.0
+2026-02-10 21:56:54,530 - chatbot_ai_system.server.main - INFO - Debug mode: True
+2026-02-10 21:56:54,530 - chatbot_ai_system.server.main - INFO - Default LLM provider: ollama
+2026-02-10 21:56:54,530 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server filesystem...
+Secure MCP Filesystem Server running on stdio
+2026-02-10 21:56:55,691 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server filesystem
+2026-02-10 21:56:55,691 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for filesystem...
+Client does not support MCP Roots, using allowed directories set from server args: [ '/Users/mk/Documents/chatbot-ai-systems-production/src' ]
+2026-02-10 21:56:55,695 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for filesystem: 14 tools found
+2026-02-10 21:56:55,695 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server git...
+2026-02-10 21:56:57,319 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server git
+2026-02-10 21:56:57,319 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for git...
+2026-02-10 21:56:57,327 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for git: 25 tools found
+2026-02-10 21:56:57,328 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server fetch...
+2026-02-10 21:56:59,786 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server fetch
+2026-02-10 21:56:59,786 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for fetch...
+2026-02-10 21:56:59,788 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for fetch: 4 tools found
+2026-02-10 21:56:59,788 - chatbot_ai_system.server.main - INFO - MCP servers registered and tools refreshed
+INFO:     Application startup complete.
+INFO:     127.0.0.1:51521 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:51526 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+WARNING:  WatchFiles detected changes in 'chatbot_ai_system/orchestrator.py'. Reloading...
+INFO:     Shutting down
+2026-02-10 21:58:07,831 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+2026-02-10 21:58:07,832 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+2026-02-10 21:58:07,931 - chatbot_ai_system.server.main - INFO - Shutting down Chatbot AI System
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22973]
+INFO:     Started server process [23145]
+INFO:     Waiting for application startup.
+2026-02-10 21:58:08,474 - chatbot_ai_system.server.main - INFO - Starting Chatbot AI System v0.1.0
+2026-02-10 21:58:08,474 - chatbot_ai_system.server.main - INFO - Debug mode: True
+2026-02-10 21:58:08,474 - chatbot_ai_system.server.main - INFO - Default LLM provider: ollama
+2026-02-10 21:58:08,475 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server filesystem...
+Secure MCP Filesystem Server running on stdio
+2026-02-10 21:58:09,318 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server filesystem
+2026-02-10 21:58:09,318 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for filesystem...
+Client does not support MCP Roots, using allowed directories set from server args: [ '/Users/mk/Documents/chatbot-ai-systems-production/src' ]
+2026-02-10 21:58:09,322 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for filesystem: 14 tools found
+2026-02-10 21:58:09,322 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server git...
+2026-02-10 21:58:10,704 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server git
+2026-02-10 21:58:10,704 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for git...
+2026-02-10 21:58:10,713 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for git: 25 tools found
+2026-02-10 21:58:10,713 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server fetch...
+2026-02-10 21:58:13,132 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server fetch
+2026-02-10 21:58:13,133 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for fetch...
+2026-02-10 21:58:13,134 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for fetch: 4 tools found
+2026-02-10 21:58:13,134 - chatbot_ai_system.server.main - INFO - MCP servers registered and tools refreshed
+INFO:     Application startup complete.
+INFO:     127.0.0.1:51578 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:51582 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+WARNING:  WatchFiles detected changes in 'chatbot_ai_system/server/routes.py'. Reloading...
+INFO:     Shutting down
+2026-02-10 21:59:07,681 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+2026-02-10 21:59:07,681 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+2026-02-10 21:59:07,782 - chatbot_ai_system.server.main - INFO - Shutting down Chatbot AI System
+INFO:     Application shutdown complete.
+INFO:     Finished server process [23145]
+Process SpawnProcess-4:
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/mk/Documents/chatbot-ai-systems-production/.venv/lib/python3.12/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/mk/Documents/chatbot-ai-systems-production/.venv/lib/python3.12/site-packages/uvicorn/server.py", line 67, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/Users/mk/Documents/chatbot-ai-systems-production/.venv/lib/python3.12/site-packages/uvicorn/server.py", line 71, in serve
+    await self._serve(sockets)
+  File "/Users/mk/Documents/chatbot-ai-systems-production/.venv/lib/python3.12/site-packages/uvicorn/server.py", line 78, in _serve
+    config.load()
+  File "/Users/mk/Documents/chatbot-ai-systems-production/.venv/lib/python3.12/site-packages/uvicorn/config.py", line 439, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mk/Documents/chatbot-ai-systems-production/.venv/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/server/__init__.py", line 3, in <module>
+    from .main import app, create_app
+  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/server/main.py", line 11, in <module>
+    from .routes import router
+  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/server/routes.py", line 24, in <module>
+    from chatbot_ai_system.orchestrator import ChatOrchestrator
+  File "/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/orchestrator.py", line 20, in <module>
+    from chatbot_ai_system.tools.registry import ToolRegistry, registry
+ImportError: cannot import name 'registry' from 'chatbot_ai_system.tools.registry' (/Users/mk/Documents/chatbot-ai-systems-production/src/chatbot_ai_system/tools/registry.py)
+WARNING:  WatchFiles detected changes in 'chatbot_ai_system/orchestrator.py'. Reloading...
+INFO:     Started server process [35802]
+INFO:     Waiting for application startup.
+2026-02-11 01:58:59,372 - chatbot_ai_system.server.main - INFO - Starting Chatbot AI System v0.1.0
+2026-02-11 01:58:59,372 - chatbot_ai_system.server.main - INFO - Debug mode: True
+2026-02-11 01:58:59,372 - chatbot_ai_system.server.main - INFO - Default LLM provider: ollama
+2026-02-11 01:58:59,372 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server filesystem...
+Secure MCP Filesystem Server running on stdio
+2026-02-11 01:59:00,453 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server filesystem
+2026-02-11 01:59:00,453 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for filesystem...
+Client does not support MCP Roots, using allowed directories set from server args: [ '/Users/mk/Documents/chatbot-ai-systems-production/src' ]
+2026-02-11 01:59:00,458 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for filesystem: 14 tools found
+2026-02-11 01:59:00,458 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server git...
+2026-02-11 01:59:02,106 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server git
+2026-02-11 01:59:02,106 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for git...
+2026-02-11 01:59:02,115 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for git: 25 tools found
+2026-02-11 01:59:02,115 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server fetch...
+2026-02-11 01:59:04,401 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server fetch
+2026-02-11 01:59:04,401 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for fetch...
+2026-02-11 01:59:04,403 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for fetch: 4 tools found
+2026-02-11 01:59:04,403 - chatbot_ai_system.server.main - INFO - MCP servers registered and tools refreshed
+INFO:     Application startup complete.
+INFO:     127.0.0.1:59116 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:59271 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+WARNING:  WatchFiles detected changes in 'chatbot_ai_system/server/routes.py'. Reloading...
+INFO:     Shutting down
+2026-02-11 02:00:15,504 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+2026-02-11 02:00:15,504 - chatbot_ai_system.server.routes - INFO - WebSocket connection closed
+INFO:     connection closed
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+2026-02-11 02:00:15,606 - chatbot_ai_system.server.main - INFO - Shutting down Chatbot AI System
+INFO:     Application shutdown complete.
+INFO:     Finished server process [35802]
+INFO:     Started server process [36272]
+INFO:     Waiting for application startup.
+2026-02-11 02:00:16,134 - chatbot_ai_system.server.main - INFO - Starting Chatbot AI System v0.1.0
+2026-02-11 02:00:16,134 - chatbot_ai_system.server.main - INFO - Debug mode: True
+2026-02-11 02:00:16,134 - chatbot_ai_system.server.main - INFO - Default LLM provider: ollama
+2026-02-11 02:00:16,135 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server filesystem...
+Secure MCP Filesystem Server running on stdio
+2026-02-11 02:00:16,963 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server filesystem
+2026-02-11 02:00:16,963 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for filesystem...
+Client does not support MCP Roots, using allowed directories set from server args: [ '/Users/mk/Documents/chatbot-ai-systems-production/src' ]
+2026-02-11 02:00:16,967 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for filesystem: 14 tools found
+2026-02-11 02:00:16,967 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server git...
+2026-02-11 02:00:18,214 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server git
+2026-02-11 02:00:18,214 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for git...
+2026-02-11 02:00:18,220 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for git: 25 tools found
+2026-02-11 02:00:18,220 - chatbot_ai_system.tools.mcp_client - INFO - Connecting to MCP server fetch...
+2026-02-11 02:00:20,639 - chatbot_ai_system.tools.mcp_client - INFO - Connected to MCP server fetch
+2026-02-11 02:00:20,639 - chatbot_ai_system.tools.mcp_client - INFO - Listing tools for fetch...
+2026-02-11 02:00:20,640 - chatbot_ai_system.tools.mcp_client - INFO - Raw list_tools result for fetch: 4 tools found
+2026-02-11 02:00:20,640 - chatbot_ai_system.server.main - INFO - MCP servers registered and tools refreshed
+INFO:     Application startup complete.
+INFO:     127.0.0.1:59315 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:59317 - "WebSocket /api/chat/stream" [accepted]
+INFO:     connection open
