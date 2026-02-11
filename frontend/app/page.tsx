@@ -87,16 +87,21 @@ export default function Home() {
             if (data.done) {
                 // Finalize the message
                 const finalContent = fullContentRef.current + (data.content || '')
-                setMessages(prev => [
-                    ...prev,
-                    {
-                        id: `msg-${Date.now()}`,
-                        role: 'assistant',
-                        content: finalContent,
-                        tool_calls: data.tool_calls,
-                        timestamp: new Date(),
-                    }
-                ])
+
+                // Only add message if it has content or tool calls
+                if (finalContent.trim() || (data.tool_calls && data.tool_calls.length > 0)) {
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: `msg-${Date.now()}`,
+                            role: 'assistant',
+                            content: finalContent,
+                            tool_calls: data.tool_calls,
+                            timestamp: new Date(),
+                        }
+                    ])
+                }
+
                 setStreamingContent('')
                 fullContentRef.current = ''
                 setStatus(null)

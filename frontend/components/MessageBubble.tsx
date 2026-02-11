@@ -17,6 +17,11 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, isStreaming = false }: MessageBubbleProps) {
+    // Don't render empty messages unless streaming or having tool calls
+    if (!message.content?.trim() && (!message.tool_calls || message.tool_calls.length === 0) && !isStreaming) {
+        return null
+    }
+
     const isUser = message.role === 'user'
 
     return (
