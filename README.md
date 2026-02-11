@@ -8,6 +8,7 @@ A production-grade, multi-tenant AI chatbot platform with multi-provider LLM sup
 
 - **Python 3.11+** with Poetry
 - **Node.js 20+** with npm
+- **Docker & Docker Compose** (for PostgreSQL)
 - **Ollama** (for local LLM) - [Install Ollama](https://ollama.ai/)
 
 ### 1. Setup Environment
@@ -34,11 +35,17 @@ ollama serve
 ollama pull qwen2.5:14b-instruct
 ```
 
-### 3. Start Backend
+### 3. Start Backend & Database
 
 ```bash
+# Start PostgreSQL Database
+docker-compose up -d postgres
+
 # Install Python dependencies
 poetry install
+
+# Apply Database Migrations (First Run)
+poetry run alembic upgrade head
 
 # Start the backend server
 poetry run uvicorn chatbot_ai_system.server.main:app --reload --host 0.0.0.0 --port 8000
@@ -88,6 +95,11 @@ flowchart TB
         Provider["LLM Provider (Ollama)"]
         Registry["Tool Registry"]
         MCPClient["MCP Client Layer"]
+        Orchestrator["Chat Orchestrator"]
+    end
+
+    subgraph Data["💾 Data Layer"]
+        DB[(PostgreSQL\nDatabase)]
     end
     
     subgraph Tools["🛠️ Tool Layer (MCP)"]
@@ -106,8 +118,10 @@ flowchart TB
     UI -.->|WebSocket| WS
     REST --> Router
     WS --> Router
-    Router --> Provider
-    Router --> Registry
+    Router --> Orchestrator
+    Orchestrator --> Provider
+    Orchestrator --> Registry
+    Orchestrator --> DB
     Provider --> Ollama
     Ollama --> Model
     Registry --> MCPClient
@@ -336,7 +350,7 @@ Model receives: **4 messages** and now has the file content to answer the user.
 > - Build on previous answers
 
 > [!NOTE]
-> **Phase 1 Limitation**: Conversation history is stored **in-memory only**. If the server restarts, all conversations are lost. Phase 2 will add PostgreSQL persistence.
+> **Persistence**: The system now uses **PostgreSQL** to store conversation history and long-term memories. Data persists across server restarts.
 
 > [!TIP]
 > **Token Efficiency**: Currently, no token limit is enforced. In production, you should:
@@ -418,12 +432,12 @@ MCP_FETCH_ENABLE=true
 - [x] **Phase 1.1**: MCP Tool Support & Streaming Execution
 - [x] **Phase 1.2**: Decision Discipline (Smart Routing & Planning)
 - [x] **Phase 1.3**: Chat Orchestrator (9-Phase Architecture)
-- [ ] **Phase 2**: Data Persistence & User Memory (PostgreSQL)
+- [x] **Phase 2**: Data Persistence & User Memory (PostgreSQL)
+- [ ] **Phase 2.5**: Observability & Schema Scaling
 - [ ] **Phase 3**: Multi-Provider Orchestration (OpenAI/Anthropic)
-- [ ] **Phase 4**: Semantic Caching
+- [ ] **Phase 4**: Semantic Caching & Vector Search
 - [ ] **Phase 5**: Authentication & Multi-Tenancy
-- [ ] **Phase 6**: Observability & Prompt Tracing
-- [ ] **Phase 7**: Infrastructure & Deployment (Docker/K8s)
+- [ ] **Phase 6**: Infrastructure & Deployment (Docker/K8s)
 
 ---
 

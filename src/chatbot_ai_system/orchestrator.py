@@ -28,30 +28,45 @@ class ChatOrchestrator:
     tool selection, and LLM interaction.
     """
 
-    def __init__(self, provider: OllamaProvider, registry: ToolRegistry):
+    def __init__(
+        self, 
+        provider: OllamaProvider, 
+        registry: ToolRegistry,
+        conversation_repo: Any, # Avoid circular import type hint issues or use TYPE_CHECKING
+        memory_repo: Any
+    ):
         self.provider = provider
         self.registry = registry
+        self.conversation_repo = conversation_repo
+        self.memory_repo = memory_repo
 
     async def run(
         self,
+        conversation_id: str,
         user_input: str,
         conversation_history: List[ChatMessage],
         model: str,
         temperature: float = 0.7,
         max_tokens: int = 1000,
+        user_id: Optional[str] = None
     ) -> AsyncGenerator[StreamChunk, None]:
         """
         Main entry point for the orchestrator (Phase 3).
-        
-        Executes the following phases:
-        Phase 4: Intent Classification
-        Phase 5: Tool Scope Reduction
-        Phase 6: First LLM Call (Planning)
-        Phase 7: Tool Execution
-        Phase 8: Tool Result Feedback Loop
-        Phase 9: Response Return
         """
-        
+        import uuid
+        conv_uuid = uuid.UUID(conversation_id)
+
+        # Fetch Long-Term Memory (Phase 2 Addition)
+        if user_id:
+            try:
+                memories = await self.memory_repo.get_user_memories(uuid.UUID(user_id))
+                user_context = "\nUser Profile:\n" + "\n".join([f"- {m.content}" for m in memories])
+            except Exception as e:
+                logger.error(f"Failed to fetch memories: {e}")
+                user_context = ""
+        else:
+            user_context = ""
+
         # --- Phase 4: Intent Classification ---
         intent = await self._classify_intent(user_input, model)
         logger.info(f"Phase 4: Classified intent as '{intent}'")
@@ -60,37 +75,21 @@ class ChatOrchestrator:
         tools = await self._filter_tools(intent, user_input)
         logger.info(f"Phase 5: Selected tools: {[t['function']['name'] for t in tools]}")
 
-        # --- Phase 5: Tool Scope Reduction ---
-        tools = await self._filter_tools(intent, user_input)
-        logger.info(f"Phase 5: Selected tools: {[t['function']['name'] for t in tools]}")
-
         # Prepare messages
-        # We work directly with conversation_history to persist changes?
-        # A safer approach for list modification:
-        # We use a working copy for the LLM context (to inject system prompt without messing up history permanently if needed)
-        # BUT we must append new messages (Assistant, Tool) to the persistent history.
-        
         messages = list(conversation_history)
+        current_seq = len(conversation_history) # Start sequence number
         
-        # Inject Dynamic System Prompt for this turn
-        # We replace any existing system prompt in the WORKING COPY only, 
-        # or we update the history? 
-        # Let's update the working copy.
+        # Inject Dynamic System Prompt
         system_prompt = self._get_system_prompt(intent, bool(tools))
-        
+        if user_context:
+            system_prompt += user_context
+
         if messages and messages[0].role == MessageRole.SYSTEM:
             messages[0] = ChatMessage(role=MessageRole.SYSTEM, content=system_prompt)
         else:
             messages.insert(0, ChatMessage(role=MessageRole.SYSTEM, content=system_prompt))
             
-        # Ensure user message is at the end (should be handling in routes, but let's be safe)
-        # routes.py appends the user message before calling run.
-        
         # --- Phase 6: First LLM Call (Planning) ---
-        
-        # --- Phase 6: First LLM Call (Planning) ---
-        # We need to stream the response.
-        
         current_tool_calls: List[ToolCall] = []
         full_content = ""
         
@@ -106,15 +105,9 @@ class ChatOrchestrator:
             if chunk.tool_calls:
                 current_tool_calls.extend(chunk.tool_calls)
             
-            # Yield content to user immediately if it's text
-            # If we are strictly expecting JSON for tools, we might want to suppress
-            # but for better UX we often stream.
             if not current_tool_calls:
                 yield chunk
             else:
-                 # If we have tool calls, we might stop yielding text if the model is just outputting JSON
-                 # But if it's "I will check that for you...", we want to show it.
-                 # Qwen often outputs strictly JSON if asked.
                  pass
 
         # Check for fallback parsing (Phase 6b)
@@ -122,86 +115,87 @@ class ChatOrchestrator:
              parsed = self.provider._try_parse_tool_calls(full_content)
              if parsed:
                  current_tool_calls = parsed
-                 logger.info(f"Fallback: Parsed tool calls from content: {len(current_tool_calls)}")
 
         # --- Phase 7: Tool Execution ---
         if current_tool_calls:
-            # Append assistant message with tool calls to history
+            # Append assistant message with tool calls
             assistant_msg = ChatMessage(
                 role=MessageRole.ASSISTANT,
                 content=full_content,
                 tool_calls=current_tool_calls
             )
             messages.append(assistant_msg)
-            conversation_history.append(assistant_msg) # Persist to history
+            
+            # Persist to DB
+            current_seq += 1
+            await self.conversation_repo.add_message(
+                conversation_id=conv_uuid,
+                role=MessageRole.ASSISTANT,
+                content=full_content,
+                sequence_number=current_seq,
+                tool_calls=[t.model_dump() for t in current_tool_calls],
+                metadata={"model": model}
+            )
             
             # Execute tools
             for tool_call in current_tool_calls:
                 tool_name = tool_call.function.name
                 tool_args = tool_call.function.arguments
                 
-                # Notify user of execution (optional, can be a specific event type)
-                yield StreamChunk(
-                    content="", 
-                    status=f"Executing {tool_name}...",
-                    done=False
-                )
+                yield StreamChunk(content="", status=f"Executing {tool_name}...", done=False)
                 
-                logger.info(f"Phase 7: Executing tool {tool_name}")
                 try:
-                    # Get tool (Phase 7a)
-                    # We need to handle the case where the tool might not be in the reduced scope
-                    # but was hallucinated. The registry check ensures safety.
                     tool = self.registry.get_tool(tool_name)
                     result = await tool.run(**tool_args)
                 except Exception as e:
                     logger.error(f"Tool execution failed: {e}")
                     result = f"Error executing tool {tool_name}: {e}"
 
-                # Append result to history
-                tool_msg = ChatMessage(
+                # Persist result
+                current_seq += 1
+                tool_msg = ChatMessage(role=MessageRole.TOOL, content=str(result), tool_call_id=tool_call.id)
+                messages.append(tool_msg)
+                
+                await self.conversation_repo.add_message(
+                    conversation_id=conv_uuid,
                     role=MessageRole.TOOL,
                     content=str(result),
+                    sequence_number=current_seq,
                     tool_call_id=tool_call.id
                 )
-                messages.append(tool_msg)
-                conversation_history.append(tool_msg) # Persist to history
 
             # --- Phase 8: Tool Result Feedback Loop ---
-            # Call LLM again with tool results
-            logger.info("Phase 8: Calling LLM with tool results")
-            
-            # We need to capture the synthesis response to append to history too!
             synthesis_content = ""
-            
             async for chunk in self.provider.stream(
                 messages=messages,
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                tools=None # No tools for synthesis Phase
+                tools=None
             ):
                 synthesis_content += chunk.content
                 yield chunk
             
-            # Append synthesis result to history
-            synthesis_msg = ChatMessage(
+            # Persist synthesis
+            current_seq += 1
+            await self.conversation_repo.add_message(
+                conversation_id=conv_uuid,
                 role=MessageRole.ASSISTANT,
-                content=synthesis_content
+                content=synthesis_content,
+                sequence_number=current_seq,
+                metadata={"model": model, "type": "synthesis"}
             )
-            conversation_history.append(synthesis_msg)
             
         else:
-             # If no tools were called, the initial loop's content is the final answer
-             # We need to append it to history
-             assistant_msg = ChatMessage(
+             # Persist final response
+             current_seq += 1
+             await self.conversation_repo.add_message(
+                conversation_id=conv_uuid,
                 role=MessageRole.ASSISTANT,
-                content=full_content
-            )
-             conversation_history.append(assistant_msg)
-
-
-        # Final cleanup / done signal is handled by the caller or the last yield
+                content=full_content,
+                sequence_number=current_seq,
+                metadata={"model": model}
+             )
 
     async def _classify_intent(self, user_input: str, model: str) -> str:
         """
@@ -245,15 +239,7 @@ class ChatOrchestrator:
         if intent == "GENERAL":
             return []
             
-        # We can implement specific filtering logic here
-        # For now, we leverage the registry's query-based filtering
-        # but we can make it more explicit based on intent categories
-        
         all_tools = await self.registry.get_ollama_tools(query=user_input)
-        
-        # Refine based on intent using a mapping if needed
-        # Or blindly trust the registry's keyword matching which is already good
-        # But let's enforce based on intent to be stricter as per "Decision Discipline"
         
         filtered = []
         for tool in all_tools:
