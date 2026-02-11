@@ -50,6 +50,13 @@ class Message(Base):
     # Metadata (tokens, latency, model_name)
     metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=True)
     
+    # Observability Metrics (Phase 2.5)
+    token_count_prompt: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    token_count_completion: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    model: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    latency_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    finish_reason: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
     sequence_number: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

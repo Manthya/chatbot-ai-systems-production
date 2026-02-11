@@ -92,6 +92,7 @@ class ChatOrchestrator:
         # --- Phase 6: First LLM Call (Planning) ---
         current_tool_calls: List[ToolCall] = []
         full_content = ""
+        self.last_usage = None # Track usage from stream
         
         # Streaming loop
         async for chunk in self.provider.stream(
@@ -109,6 +110,13 @@ class ChatOrchestrator:
                 yield chunk
             else:
                  pass
+            
+            # Capture usage from the last chunk if present
+            if chunk.usage:
+                # Store it temporarily or use it for the final message persistence
+                # We need to persist it. The loop finishes when stream ends.
+                # Let's store it in a local variable.
+                self.last_usage = chunk.usage
 
         # Check for fallback parsing (Phase 6b)
         if not current_tool_calls and tools:
@@ -134,7 +142,10 @@ class ChatOrchestrator:
                 content=full_content,
                 sequence_number=current_seq,
                 tool_calls=[t.model_dump() for t in current_tool_calls],
-                metadata={"model": model}
+                metadata={"model": model},
+                token_count_prompt=self.last_usage.prompt_tokens if self.last_usage else None,
+                token_count_completion=self.last_usage.completion_tokens if self.last_usage else None,
+                model=model
             )
             
             # Execute tools
@@ -166,6 +177,7 @@ class ChatOrchestrator:
 
             # --- Phase 8: Tool Result Feedback Loop ---
             synthesis_content = ""
+            self.last_usage = None # Reset for synthesis
             async for chunk in self.provider.stream(
                 messages=messages,
                 model=model,
@@ -174,6 +186,8 @@ class ChatOrchestrator:
                 tools=None
             ):
                 synthesis_content += chunk.content
+                if chunk.usage:
+                    self.last_usage = chunk.usage
                 yield chunk
             
             # Persist synthesis
@@ -183,7 +197,10 @@ class ChatOrchestrator:
                 role=MessageRole.ASSISTANT,
                 content=synthesis_content,
                 sequence_number=current_seq,
-                metadata={"model": model, "type": "synthesis"}
+                metadata={"model": model, "type": "synthesis"},
+                token_count_prompt=self.last_usage.prompt_tokens if self.last_usage else None,
+                token_count_completion=self.last_usage.completion_tokens if self.last_usage else None,
+                model=model
             )
             
         else:
@@ -194,7 +211,10 @@ class ChatOrchestrator:
                 role=MessageRole.ASSISTANT,
                 content=full_content,
                 sequence_number=current_seq,
-                metadata={"model": model}
+                metadata={"model": model},
+                token_count_prompt=self.last_usage.prompt_tokens if self.last_usage else None,
+                token_count_completion=self.last_usage.completion_tokens if self.last_usage else None,
+                model=model
              )
 
     async def _classify_intent(self, user_input: str, model: str) -> str:

@@ -128,12 +128,13 @@ async def chat_completion(request: ChatRequest, db: AsyncSession = Depends(get_d
          conversation = await conv_repo.create_conversation(user_id=user_id)
          conversation_id = conversation.id
 
-    # Load history
+    # Load history (Sliding Window: Last 50 messages)
     # We need to render ChatMessage objects from DB Message objects
-    full_conv = await conv_repo.get_conversation_with_messages(conversation_id)
+    # Phase 2.6: Use get_recent_messages
+    db_messages = await conv_repo.get_recent_messages(conversation_id, limit=50)
     history = []
-    if full_conv and full_conv.messages:
-        for msg in full_conv.messages:
+    if db_messages:
+        for msg in db_messages:
             history.append(ChatMessage(
                 role=msg.role,
                 content=msg.content,
@@ -340,11 +341,11 @@ async def websocket_chat_stream(websocket: WebSocket, db: AsyncSession = Depends
             
             conversation_id = conversation.id
 
-            # Load History
-            full_conv = await conv_repo.get_conversation_with_messages(conversation_id)
+            # Load History (Sliding Window: Last 50 messages)
+            db_messages = await conv_repo.get_recent_messages(conversation_id, limit=50)
             history = []
-            if full_conv and full_conv.messages:
-                for msg in full_conv.messages:
+            if db_messages:
+                for msg in db_messages:
                     history.append(ChatMessage(
                         role=msg.role,
                         content=msg.content,

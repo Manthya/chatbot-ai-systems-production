@@ -77,7 +77,10 @@ class StreamChunk(BaseModel):
     status: Optional[str] = None
     done: bool = False
     tool_calls: Optional[List[ToolCall]] = None
+    done: bool = False
+    tool_calls: Optional[List[ToolCall]] = None
     conversation_id: Optional[str] = None
+    usage: Optional[UsageInfo] = None
 
 
 class ConversationInfo(BaseModel):

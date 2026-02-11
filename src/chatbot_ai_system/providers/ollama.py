@@ -297,10 +297,19 @@ class OllamaProvider(BaseLLMProvider):
                                     )
 
                             if content or done or tool_calls:
+                                usage = None
+                                if done:
+                                    usage = UsageInfo(
+                                        prompt_tokens=data.get("prompt_eval_count", 0),
+                                        completion_tokens=data.get("eval_count", 0),
+                                        total_tokens=data.get("prompt_eval_count", 0) + data.get("eval_count", 0)
+                                    )
+
                                 yield StreamChunk(
                                     content=content,
                                     done=done,
-                                    tool_calls=tool_calls
+                                    tool_calls=tool_calls,
+                                    usage=usage
                                 )
 
         except httpx.HTTPError as e:
