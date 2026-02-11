@@ -21,6 +21,7 @@ from chatbot_ai_system.models.schemas import (
 )
 from chatbot_ai_system.providers import OllamaProvider
 from chatbot_ai_system.tools import registry
+from chatbot_ai_system.orchestrator import ChatOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -95,75 +96,67 @@ async def chat_completion(request: ChatRequest):
 
     try:
         # Get all messages for context
-        all_messages = list(_conversations[conversation_id])
+        # Orchestrator expects the new messages to be in history or passed as input?
+        # Orchestrator.run takes (user_input, conversation_history).
+        # We need to ensure the user message is added to history first (which it is, lines 91-95).
         
-        # Add system prompt if not present to guide tool use
-        if not any(m.role == MessageRole.SYSTEM for m in all_messages):
-            system_prompt = (
-                "You are a helpful AI assistant with access to local tools via MCP. "
-                "1. If you need information, select a tool and output its call in a JSON block. "
-                "2. You will then receive the tool's result in the next message. "
-                "3. Use the result to answer the user's question. DO NOT repeat the tool call if you have already received a result.\n"
-                "Format tool calls as: ```json\n{\"name\": \"...\", \"arguments\": {...}}\n```"
-            )
-            all_messages.insert(0, ChatMessage(role=MessageRole.SYSTEM, content=system_prompt))
-
-        max_turns = 5
-        final_response = None
-
-        for _ in range(max_turns):
-            response = await provider.complete(
-                messages=all_messages,
-                model=request.model,
-                temperature=request.temperature,
-                max_tokens=request.max_tokens,
-                tools=await registry.get_ollama_tools(),
-            )
-
-            # If the response contains tool calls, clear the content to avoid
-            # confusing the model with its own raw JSON in the next turn's history.
-            if response.message.tool_calls:
-                response.message.content = ""
-            
-            # Important: Update all_messages so the LLM sees its own response in next turn
-            all_messages.append(response.message)
-            _conversations[conversation_id].append(response.message)
-            final_response = response
-
-            # Check for tool calls
-            if not response.message.tool_calls:
-                break
-
-            # Execute tools
-            for tool_call in response.message.tool_calls:
-                tool_name = tool_call.function.name
-                tool_args = tool_call.function.arguments
-                
-                logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
-                
-                try:
-                    tool = registry.get_tool(tool_name)
-                    result = await tool.run(**tool_args)
-                except Exception as e:
-                    result = f"Error executing tool {tool_name}: {e}"
-
-                # Add tool result to history
-                tool_msg = ChatMessage(
-                    role=MessageRole.TOOL,
-                    content=str(result),
-                    tool_call_id=tool_call.id
-                )
-                all_messages.append(tool_msg)
-                _conversations[conversation_id].append(tool_msg)
-
-        if final_response:
-            final_response.conversation_id = conversation_id
-            return final_response
+        # We need to find the user query from the request
+        user_msg = request.messages[-1] # content-wise, or iterate
+        # logic at lines 92-94 adds them.
+        # But we need the query string for orchestrator.
+        if request.messages:
+             user_query = request.messages[-1].content
+             if request.messages[-1].role != MessageRole.USER:
+                 # fallback if last message isn't user (rare)
+                 user_query = "Process the conversation context."
         else:
-             raise HTTPException(status_code=500, detail="No response generated")
+             raise HTTPException(status_code=400, detail="No messages provided")
+
+        # Initialize Orchestrator
+        orchestrator = ChatOrchestrator(provider=provider, registry=registry)
+        
+        full_content = ""
+        tool_calls = []
+        
+        # Run Orchestrator and consume stream
+        async for chunk in orchestrator.run(
+            user_input=user_query,
+            conversation_history=_conversations[conversation_id], # Pass mutable list
+            model=request.model,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens or 1000
+        ):
+             full_content += chunk.content
+             if chunk.tool_calls:
+                 tool_calls.extend(chunk.tool_calls)
+        
+        # Construct final response
+        # The orchestrator should have updated `_conversations[conversation_id]` with the final response
+        # so we can just return the last message from history?
+        # BUT `ChatResponse` expects the generated message.
+        # And we need usage info (which orchestrator streaming doesn't provide easily yet... oops).
+        # We'll mock usage for now or improve Orchestrator later.
+        
+        # We'll return the aggregated content.
+        
+        response_msg = ChatMessage(
+            role=MessageRole.ASSISTANT,
+            content=full_content,
+            tool_calls=tool_calls if tool_calls else None
+        )
+        
+        return ChatResponse(
+            message=response_msg,
+            usage=None, # Orchestrator stream doesn't bubble usage yet
+            model=request.model or settings.default_llm_provider,
+            provider=provider_name
+        )
 
     except Exception as e:
         logger.error(f"Chat completion error: {e}")
+        # Log stack trace
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to generate response: {e}")
 
 
@@ -259,8 +252,6 @@ async def websocket_chat_stream(websocket: WebSocket):
             conversation_id = request.conversation_id or str(uuid.uuid4())
             if conversation_id not in _conversations:
                 _conversations[conversation_id] = []
-                # Phase 1.2: We don't add a static system prompt here anymore. 
-                # We inject dynamic system prompts based on the planning phase.
 
             # Add new messages from client
             # We use a combined hash of role and content to deduplicate
@@ -286,104 +277,24 @@ async def websocket_chat_stream(websocket: WebSocket):
             user_query = new_user_message.content
 
             try:
-                # --- STEP 1 & 5: PLANNING PHASE ---
-                # Decide if tool is needed
+                # Initialize Orchestrator
+                orchestrator = ChatOrchestrator(provider=provider, registry=registry)
                 
-                logger.info(f"PLANNING: Assessing need for tools for query: '{user_query}'")
+                # Run Orchestrator
+                # We pass the conversion_id mostly for tracking, but here we pass the HISTORY list
+                # _conversations[conversation_id] is the list we want to update.
                 
-                planning_messages = [
-                    ChatMessage(
-                        role=MessageRole.SYSTEM,
-                        content=(
-                            "You are a routing agent. Your job is to decide if the user's request requires external tools.\n"
-                            "Return ONLY 'USE_TOOL' if the request involves: file system access, git operations, fetching URLs, or checking system time.\n"
-                            "Return ONLY 'NO_TOOL' if the request is: general knowledge, coding help (without reading files), greetings, or small talk.\n"
-                            "Answer with exactly one word."
-                        )
-                    ),
-                    ChatMessage(role=MessageRole.USER, content=user_query)
-                ]
-                
-                planning_response = await provider.complete(
-                    messages=planning_messages,
-                    model=request.model, # Use same model for planning
-                    max_tokens=10,
-                    temperature=0.1 # Low temp for determinism
-                )
-                
-                decision = planning_response.message.content.strip().upper()
-                # Fallback if model is chatty
-                if "USE_TOOL" in decision:
-                    decision = "USE_TOOL"
-                else:
-                    decision = "NO_TOOL"
-                    
-                logger.info(f"PLANNING DECISION: {decision}")
-
-                # --- STEP 2 & 8: TOOL FILTERING ---
-                target_tools = []
-                if decision == "USE_TOOL":
-                    target_tools = await registry.get_ollama_tools(query=user_query)
-                    if not target_tools:
-                        logger.info("PLANNING: Decision was USE_TOOL but no relevant tools found. Reverting to NO_TOOL.")
-                        decision = "NO_TOOL"
-                    else:
-                        tool_names = [t['function']['name'] for t in target_tools]
-                        logger.info(f"PLANNING: Tools exposed: {tool_names}")
-
-                # --- STEP 3 & 4: EXECUTION / JSON ENFORCEMENT ---
-                
-                current_turn_messages = list(_conversations[conversation_id])
-                
-                # Dynamic System Prompt
-                if decision == "USE_TOOL":
-                    system_instructions = (
-                        "You are an AI assistant with access to external tools.\n"
-                        "RULES:\n"
-                        "1. You MUST call one of the provided tools to answer the question.\n"
-                        "2. Return ONLY a valid JSON tool call in the format {\"name\": \"...\", \"arguments\": {...}}.\n"
-                        "3. Do NOT explain your thought process or talk. Just output the JSON."
-                    )
-                else:
-                    system_instructions = (
-                        "You are a helpful AI assistant.\n"
-                        "No external tools are available or needed for this question.\n"
-                        "Answer using your internal knowledge only.\n"
-                        "Respond in natural language."
-                    )
-
-                # Inject strict system prompt for this turn
-                # We replace any existing system prompt or append a specific one for this turn
-                current_turn_messages.insert(0, ChatMessage(role=MessageRole.SYSTEM, content=system_instructions))
-
-                
-                full_content = ""
-                current_tool_calls = []
-                final_answer_source = "MODEL"
-
-                async for chunk in provider.stream(
-                    messages=current_turn_messages,
+                async for chunk in orchestrator.run(
+                    user_input=user_query,
+                    conversation_history=_conversations[conversation_id],
                     model=request.model,
                     temperature=request.temperature,
-                    max_tokens=request.max_tokens,
-                    tools=target_tools if decision == "USE_TOOL" else None,
+                    max_tokens=request.max_tokens or 1000
                 ):
                     if not is_connected:
                         break
                     
-                    full_content += chunk.content
-                    
-                    if chunk.tool_calls:
-                        current_tool_calls.extend(chunk.tool_calls)
-                        
                     chunk.conversation_id = conversation_id
-                    
-                    if chunk.done:
-                        continue
-
-                    # If we are in USE_TOOL mode, we suppress content chunks until we confirm it's not a tool call
-                    # ignoring this for now to keep UI responsive, but for strict JSON we might want to buffer?
-                    # Qwen usually outputs JSON directly.
                     
                     try:
                         await websocket.send_json(chunk.model_dump())
@@ -391,104 +302,12 @@ async def websocket_chat_stream(websocket: WebSocket):
                         is_connected = False
                         break
                 
-                if not is_connected:
-                    break
-                
-                # --- Fallback Parsing for Qwen ---
-                if decision == "USE_TOOL" and not current_tool_calls and full_content:
-                     parsed_tool_calls = provider._try_parse_tool_calls(full_content)
-                     if parsed_tool_calls:
-                        current_tool_calls = parsed_tool_calls
-                        logger.info(f"Fallback: Parsed tool calls from content: {len(current_tool_calls)}")
-                        # If we parsed tool calls from content, we should probably clear the content displayed to user
-                        # implying the previous chunks were "thinking" / JSON raw.
-                        # But we already sent them. This is a UI UX nuance. 
-                        # For now, we proceed.
-
-                # Update conversation history
-                stored_content = full_content if not current_tool_calls else ""
-                assistant_msg = ChatMessage(
-                    role=MessageRole.ASSISTANT, 
-                    content=stored_content,
-                    tool_calls=current_tool_calls
-                )
-                _conversations[conversation_id].append(assistant_msg) # Persist to history
-
-                # --- STEP 6: SYNTHESIS Phase ---
-                if current_tool_calls:
-                    final_answer_source = "TOOL"
-                    
-                    for tc in current_tool_calls:
-                        tool_name = tc.function.name
-                        tool_args = tc.function.arguments
-                        
-                         # Yield "Thinking" status
-                        if is_connected:
-                            try:
-                                await websocket.send_json(StreamChunk(content="", status=f"Thinking: {tool_name}...", conversation_id=conversation_id).model_dump())
-                            except Exception:
-                                pass
-
-                        logger.info(f"EXECUTING TOOL: {tool_name}")
-                        try:
-                            tool = registry.get_tool(tool_name)
-                            result = await tool.run(**tool_args)
-                        except Exception as e:
-                            # Step 7: Tool Failure Fallback
-                            result = f"Error: The tool execution failed: {str(e)}"
-
-                        tool_msg = ChatMessage(
-                             role=MessageRole.TOOL,
-                             content=str(result),
-                             tool_call_id=tc.id
-                        )
-                        _conversations[conversation_id].append(tool_msg)
-                        
-                        # Append to current context for synthesis
-                        current_turn_messages.append(assistant_msg)
-                        current_turn_messages.append(tool_msg)
-
-                    # Synthesis call
-                    synthesis_system_msg = ChatMessage(
-                        role=MessageRole.SYSTEM,
-                        content=(
-                            "Tool result:\n"
-                            f"{str(result)[:2000]}...\n\n" # Truncate for safety/context window?
-                            "Using ONLY the tool result above, answer the original question clearly."
-                        )
-                    )
-                    # We might want to just append this instruction as a user message or system message at end
-                    # Replacing the strict tool system prompt
-                    current_turn_messages = [m for m in current_turn_messages if m.role != MessageRole.SYSTEM]
-                    current_turn_messages.insert(0, synthesis_system_msg)
-
-                    async for chunk in provider.stream(
-                        messages=current_turn_messages,
-                        model=request.model,
-                        tools=None # No tools for synthesis
-                    ):
-                         if not is_connected: break
-                         # Send synthesis chunks
-                         try:
-                            await websocket.send_json(chunk.model_dump())
-                         except Exception:
-                            is_connected = False
-                            break
-                            
-                    # Start tracking synthesis response (not implementing separate history append for synthesis 
-                    # as it usually flows as one turn in UI, but backend stores it as separate assistant msg? 
-                    # Standard ollama flow appends synthesis as a new assistant message)
-                    full_synthesis = "" # Capture if needed for logs
-                    
                 # Final Done Chunk
                 if is_connected:
                     try:
                         await websocket.send_json(StreamChunk(content="", done=True, conversation_id=conversation_id).model_dump())
                     except Exception:
                         pass
-                
-                logger.info(f"REQUEST COMPLETE. Source: {final_answer_source}")
-
 
             except Exception as e:
                 logger.error(f"Streaming error: {e}")
@@ -506,4 +325,5 @@ async def websocket_chat_stream(websocket: WebSocket):
         logger.error(f"WebSocket error: {e}")
     finally:
         logger.info("WebSocket connection closed")
+
 
