@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from chatbot_ai_system import __version__
 from chatbot_ai_system.config import get_settings
+from chatbot_ai_system.database.redis import redis_client
 
 from .routes import router
 
@@ -47,6 +48,9 @@ def create_app() -> FastAPI:
         logger.info(f"Starting Chatbot AI System v{__version__}")
         logger.info(f"Debug mode: {settings.debug}")
         logger.info(f"Default LLM provider: {settings.default_llm_provider}")
+        
+        # Initialize Redis
+        await redis_client.connect(settings.redis_url)
         
         # Initialize and register MCP clients
         from chatbot_ai_system.tools.mcp_client import MCPClient
@@ -104,6 +108,9 @@ def create_app() -> FastAPI:
         for provider in _providers.values():
             if hasattr(provider, "close"):
                 await provider.close()
+                
+        # Close Redis
+        await redis_client.close()
 
     return app
 

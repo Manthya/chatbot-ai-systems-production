@@ -106,27 +106,17 @@ async def chat_completion(request: ChatRequest, db: AsyncSession = Depends(get_d
 
     # Get or create conversation
     if request.conversation_id:
-        conversation_id = uuid.UUID(request.conversation_id)
-        conversation = await conv_repo.get(conversation_id)
-        if not conversation:
-            # Create if ID provided but not found (client generated ID)
-            # OR raise 404. Let's create for flexibility.
-            conversation = await conv_repo.create_conversation(user_id=user_id) # ID will be new though, we can't force ID easily with BaseRepo.create unless we override
-            # Actually BaseRepo.create checks kwargs.
-            # Let's just create a new one if not found or reuse logic.
-            # If client provides ID, it usually expects THAT ID.
-            # Postgres UUID is usually server generated, but can be client.
-            # Let's assume server generated for now. If request.conversation_id is sent, we expect it to exist.
-            # If it doesn't exist, we'll create a new one and return THAT id.
-            pass 
+        try:
+            conversation_id = uuid.UUID(request.conversation_id)
+            conversation = await conv_repo.get(conversation_id)
+            if not conversation:
+                conversation = await conv_repo.create_conversation(user_id=user_id)
+        except ValueError:
+            conversation = await conv_repo.create_conversation(user_id=user_id)
     else:
         conversation = await conv_repo.create_conversation(user_id=user_id)
-        conversation_id = conversation.id
-
-    if not conversation:
-         # If ID was passed but not found, act as new?
-         conversation = await conv_repo.create_conversation(user_id=user_id)
-         conversation_id = conversation.id
+    
+    conversation_id = conversation.id
 
     # Load history (Sliding Window: Last 50 messages)
     # We need to render ChatMessage objects from DB Message objects
@@ -206,7 +196,8 @@ async def chat_completion(request: ChatRequest, db: AsyncSession = Depends(get_d
             message=response_msg,
             usage=None,
             model=request.model or settings.default_llm_provider,
-            provider=provider_name
+            provider=provider_name,
+            conversation_id=str(conversation_id)
         )
 
     except Exception as e:

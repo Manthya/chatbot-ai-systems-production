@@ -4,6 +4,7 @@ import os
 import logging
 from typing import Any, Dict, List, Optional
 from contextlib import AsyncExitStack
+from chatbot_ai_system.database.redis import redis_client
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -65,6 +66,14 @@ class MCPClient:
                 
         try:
             logger.info(f"Listing tools for {self.name}...")
+            
+            # Check cache
+            cache_key = f"mcp:tools:{self.name}"
+            cached_tools = await redis_client.get(cache_key)
+            if cached_tools:
+                logger.info(f"Using cached tools for {self.name}")
+                return cached_tools
+
             result = await self.session.list_tools()
             logger.info(f"Raw list_tools result for {self.name}: {len(result.tools)} tools found")
             tools = []
@@ -77,16 +86,44 @@ class MCPClient:
                         "parameters": tool.inputSchema
                     }
                 })
+            
+            # Cache results for 30 minutes
+            await redis_client.set(cache_key, tools, ttl=1800)
+            
             return tools
         except Exception as e:
             logger.error(f"Error listing tools for {self.name}: {e}")
             return []
 
     async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Any:
-        """Call a tool on the MCP server."""
+        """Call a tool on the MCP server with caching."""
         if not self.session:
             await self.connect()
             
+        # Tool types and their TTLs
+        # filesystem: 120s, git: 60s, fetch: 300s
+        ttl = 60 # Default
+        if self.name == "filesystem":
+            ttl = 120
+        elif self.name == "git":
+            ttl = 60
+        elif self.name == "fetch":
+            ttl = 300
+            
+        import hashlib
+        import json
+        
+        # Create a stable hash of the arguments
+        args_str = json.dumps(arguments, sort_keys=True)
+        args_hash = hashlib.md5(args_str.encode()).hexdigest()
+        cache_key = f"tool:{self.name}:{name}:{args_hash}"
+        
+        # Check cache
+        cached_result = await redis_client.get(cache_key)
+        if cached_result:
+            logger.info(f"Using cached result for {self.name}:{name}")
+            return cached_result
+
         try:
             result = await self.session.call_tool(name, arguments)
             # Result usually contains 'content' which is a list of text/image
@@ -98,7 +135,12 @@ class MCPClient:
                     output.append(content.text)
                 # Handle other types if needed
                 
-            return "\n".join(output)
+            final_output = "\n".join(output)
+            
+            # Cache the result
+            await redis_client.set(cache_key, final_output, ttl=ttl)
+            
+            return final_output
         except Exception as e:
             logger.error(f"Error calling tool {name} on {self.name}: {e}")
             raise

@@ -16,11 +16,24 @@ class EmbeddingService:
 
     async def generate_embedding(self, text: str) -> Optional[List[float]]:
         """
-        Generate embedding for a given text.
+        Generate embedding for a given text with caching.
         """
         if not text:
             return None
             
+        import hashlib
+        from chatbot_ai_system.database.redis import redis_client
+        
+        # Create hash for text
+        text_hash = hashlib.md5(text.encode()).hexdigest()
+        cache_key = f"embedding:{text_hash}"
+        
+        # Check cache
+        cached_embedding = await redis_client.get(cache_key)
+        if cached_embedding:
+            logger.info("Using cached embedding")
+            return cached_embedding
+
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
@@ -33,7 +46,13 @@ class EmbeddingService:
                 
                 if response.status_code == 200:
                     data = response.json()
-                    return data.get("embedding")
+                    embedding = data.get("embedding")
+                    
+                    if embedding:
+                        # Cache embedding (24 hour TTL)
+                        await redis_client.set(cache_key, embedding, ttl=86400)
+                        
+                    return embedding
                 else:
                     logger.error(f"Embedding generation failed: {response.text}")
                     return None

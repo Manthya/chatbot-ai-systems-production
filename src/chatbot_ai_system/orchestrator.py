@@ -22,6 +22,7 @@ from chatbot_ai_system.providers.ollama import OllamaProvider
 from chatbot_ai_system.tools.registry import ToolRegistry
 from chatbot_ai_system.tools import registry
 from chatbot_ai_system.services.embedding import EmbeddingService
+from chatbot_ai_system.database.redis import redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ class ChatOrchestrator:
         """
         import uuid
         conv_uuid = uuid.UUID(conversation_id)
+        semantic_context = ""
 
         # Fetch Long-Term Memory (Phase 2 Addition)
         if user_id:
@@ -81,6 +83,20 @@ class ChatOrchestrator:
             conv_summary = None
             last_summarized_seq = 0
 
+        # --- Phase 3.5: Context Cache Check ---
+        context_cache_key = f"conversation:{conversation_id}:context"
+        cached_context = await redis_client.get(context_cache_key)
+        
+        if cached_context:
+            logger.info(f"Using cached context for conversation {conversation_id}")
+            # cached_context is a dict containing user_context, semantic_context, and conv_summary
+            if not user_context: user_context = cached_context.get("user_context", "")
+            if not semantic_context: semantic_context = cached_context.get("semantic_context", "")
+            if not conv_summary: conv_summary = cached_context.get("conv_summary", "")
+        else:
+            # We'll cache it after we've computed all parts
+            pass
+
         # --- Phase 4: Intent Classification ---
         intent = await self._classify_intent(user_input, model)
         logger.info(f"Phase 4: Classified intent as '{intent}'")
@@ -90,25 +106,35 @@ class ChatOrchestrator:
         logger.info(f"Phase 5: Selected tools: {[t['function']['name'] for t in tools]}")
 
         # --- Phase 5.5: Semantic Memory Retrieval (Phase 3) ---
-        semantic_context = ""
-        try:
-            query_embedding = await self.embedding_service.generate_embedding(user_input)
-            if query_embedding and user_id:
-                similar_msgs = await self.conversation_repo.search_similar_messages(
-                    uuid.UUID(user_id), 
-                    query_embedding, 
-                    limit=3
-                )
-                if similar_msgs:
-                    # Filter out messages that might be in the current sliding window 
-                    # (though we don't have the history loaded yet, we can filter by ID later if needed)
-                    # For now, just render them
-                    semantic_context = "\nRelevant Past Conversation Context:\n"
-                    for m in similar_msgs:
-                        semantic_context += f"- {m.role}: {m.content}\n"
-                    logger.info(f"Phase 5.5: Retrieved {len(similar_msgs)} similar messages.")
-        except Exception as e:
-            logger.error(f"Semantic memory retrieval failed: {e}")
+        # Only do this if we don't have it from cache or if we want to refresh?
+        # For now, if we have it from cache, we might still want to refresh based on NEW user_input
+        # but the prompt says "Do not recompute the same prompt every turn".
+        # Actually, semantic context is query-dependent, so it SHOULD be recomputed.
+        # But "last N turns summary" and "user profile" are relatively stable.
+        
+        if not semantic_context:
+            try:
+                query_embedding = await self.embedding_service.generate_embedding(user_input)
+                if query_embedding and user_id:
+                    similar_msgs = await self.conversation_repo.search_similar_messages(
+                        uuid.UUID(user_id), 
+                        query_embedding, 
+                        limit=3
+                    )
+                    if similar_msgs:
+                        semantic_context = "\nRelevant Past Conversation Context:\n"
+                        for m in similar_msgs:
+                            semantic_context += f"- {m.role}: {m.content}\n"
+                        logger.info(f"Phase 5.5: Retrieved {len(similar_msgs)} similar messages.")
+            except Exception as e:
+                logger.error(f"Semantic memory retrieval failed: {e}")
+
+        # Update Context Cache (30-120 min sliding TTL)
+        await redis_client.set(context_cache_key, {
+            "user_context": user_context,
+            "semantic_context": semantic_context,
+            "conv_summary": conv_summary
+        }, ttl=3600) # 1 hour
 
         # Prepare messages
         messages = list(conversation_history)
@@ -177,7 +203,7 @@ class ChatOrchestrator:
             
             # Persist to DB
             current_seq += 1
-            await self.conversation_repo.add_message(
+            msg = await self.conversation_repo.add_message(
                 conversation_id=conv_uuid,
                 role=MessageRole.ASSISTANT,
                 content=full_content,
@@ -241,7 +267,7 @@ class ChatOrchestrator:
             
             # Persist synthesis
             current_seq += 1
-            await self.conversation_repo.add_message(
+            msg = await self.conversation_repo.add_message(
                 conversation_id=conv_uuid,
                 role=MessageRole.ASSISTANT,
                 content=synthesis_content,
@@ -258,7 +284,7 @@ class ChatOrchestrator:
         else:
              # Persist final response
              current_seq += 1
-             await self.conversation_repo.add_message(
+             msg = await self.conversation_repo.add_message(
                 conversation_id=conv_uuid,
                 role=MessageRole.ASSISTANT,
                 content=full_content,

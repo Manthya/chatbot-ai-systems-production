@@ -110,6 +110,10 @@ flowchart TB
         Git["Git Server"]
         Fetch["Fetch/Web Server"]
     end
+
+    subgraph Cache["⚡ Cache Layer (Fast Memory)"]
+        Redis[(Redis\nCache)]
+    end
     
     subgraph LLM["🤖 LLM Layer"]
         Ollama["Ollama Server<br/>localhost:11434"]
@@ -125,10 +129,11 @@ flowchart TB
     Router --> Orchestrator
     Orchestrator --> Provider
     Orchestrator --> Registry
-    Orchestrator --> DB
-    Orchestrator --> Vector
-    Orchestrator --> Summary
-    Orchestrator --> Window
+    Orchestrator --> Redis
+    Redis --> DB
+    Redis --> Vector
+    Redis --> Summary
+    Redis --> Window
     Provider --> Ollama
     Ollama --> Inference
     Ollama --> Embed
@@ -422,6 +427,7 @@ MCP_FETCH_ENABLE=true
 
 ### Backend
 - **FastAPI** - Modern Python web framework
+- **Redis** - High-performance caching layer
 - **Model Context Protocol (MCP)** - Standard for connecting LLMs to tools
 - **Ollama** - Local LLM inference
 - **Pydantic** - Data validation
@@ -444,7 +450,8 @@ MCP_FETCH_ENABLE=true
 - [x] **Phase 2.5**: Observability & Schema Scaling
 - [x] **Phase 2.6**: Sliding Window Context (Hot Memory)
 - [x] **Phase 2.7**: Conversation Summarization (Warm Memory)
-- [x] **Phase 3**: Vector Search (Cold Memory / RAG)
+- [x] **Phase 3.0**: Redis Caching & Performance Optimization
+- [ ] **Phase 4**: Vector Search (Cold Memory / RAG)
 - [ ] **Phase 4**: Multi-Provider Orchestration (OpenAI/Anthropic)
 - [ ] **Phase 5**: Authentication & Multi-Tenancy
 - [ ] **Phase 6**: Infrastructure & Deployment (Docker/K8s)

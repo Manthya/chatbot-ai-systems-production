@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     database_url: str | None = None
 
     # Redis Configuration (Phase 2)
-    redis_url: str | None = None
+    redis_url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
 
     class Config:
         env_file = ".env"
