@@ -138,6 +138,7 @@ flowchart TB
     Ollama --> Inference
     Ollama --> Embed
     Registry --> MCPClient
+    MCPClient --> Redis
     MCPClient --> FS
     MCPClient --> Git
     MCPClient --> Fetch
@@ -451,10 +452,10 @@ MCP_FETCH_ENABLE=true
 - [x] **Phase 2.6**: Sliding Window Context (Hot Memory)
 - [x] **Phase 2.7**: Conversation Summarization (Warm Memory)
 - [x] **Phase 3.0**: Redis Caching & Performance Optimization
-- [ ] **Phase 4**: Vector Search (Cold Memory / RAG)
-- [ ] **Phase 4**: Multi-Provider Orchestration (OpenAI/Anthropic)
-- [ ] **Phase 5**: Authentication & Multi-Tenancy
-- [ ] **Phase 6**: Infrastructure & Deployment (Docker/K8s)
+- [x] **Phase 4.0**: Observability (Prometheus & Grafana) - [Docs](docs/phase_4.0.md)
+- [ ] **Phase 5.0**: Vector Search (Cold Memory / RAG)
+- [ ] **Phase 6.0**: Multi-Provider Orchestration
+- [ ] **Phase 7.0**: Authentication & Multi-Tenancy
 
 ---
 

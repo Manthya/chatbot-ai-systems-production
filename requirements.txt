@@ -21,3 +21,4 @@ pgvector
 psycopg2-binary>=0.1.0
 greenlet
 redis>=5.0.1
+prometheus-fastapi-instrumentator

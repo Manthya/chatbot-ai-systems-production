@@ -4,6 +4,7 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from chatbot_ai_system import __version__
 from chatbot_ai_system.config import get_settings
@@ -51,6 +52,9 @@ def create_app() -> FastAPI:
         
         # Initialize Redis
         await redis_client.connect(settings.redis_url)
+
+        # Initialize Prometheus Instrumentation
+        Instrumentator().instrument(app).expose(app)
         
         # Initialize and register MCP clients
         from chatbot_ai_system.tools.mcp_client import MCPClient
