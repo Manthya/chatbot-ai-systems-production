@@ -4,6 +4,7 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from chatbot_ai_system import __version__
 from chatbot_ai_system.config import get_settings
@@ -42,6 +43,9 @@ def create_app() -> FastAPI:
 
     # Include routes
     app.include_router(router)
+
+    # Initialize Prometheus Instrumentation
+    Instrumentator().instrument(app).expose(app)
 
     @app.on_event("startup")
     async def startup_event():

@@ -1,0 +1,26 @@
+groups:
+  - name: BackendAlerts
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m])) 
+          / 
+          sum(rate(http_requests_total[5m])) 
+          > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP Error Rate"
+          description: "More than 5% of requests are failing with 5xx errors."
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) 
+          > 1.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Latency"
+          description: "P99 latency is above 1 second."

@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     cors_origins: List[str] = ["http://localhost:3000", "http://localhost:8000"]
 
     # Database Configuration (Phase 2)
-    database_url: str | None = None
+    database_url: str | None = Field(default=None, env="POSTGRES_URL")
 
     # Redis Configuration (Phase 2)
     redis_url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")

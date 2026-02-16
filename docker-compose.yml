@@ -14,7 +14,12 @@ services:
       - DEBUG=true
       - DEFAULT_LLM_PROVIDER=ollama
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - OLLAMA_MODEL=llama2
+      - OLLAMA_MODEL=qwen2.5:14b-instruct
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_URL=postgresql+asyncpg://chatbot:password@postgres:5432/chatbot
+      - DATABASE_URL=postgresql+asyncpg://chatbot:password@postgres:5432/chatbot
+    env_file:
+      - .env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -59,6 +64,40 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./docker/prometheus/rules.yml:/etc/prometheus/rules.yml
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./docker/grafana/dashboards:/etc/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - redis
 
 volumes:
   postgres_data:

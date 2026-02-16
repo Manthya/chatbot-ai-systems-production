@@ -14,7 +14,19 @@ from chatbot_ai_system.models.schemas import (
     StreamChunk,
     UsageInfo,
     ToolCall,
+    ChatMessage,
+    ChatResponse,
+    MessageRole,
+    StreamChunk,
+    UsageInfo,
+    ToolCall,
     ToolCallFunction,
+)
+from chatbot_ai_system.observability.metrics import (
+    LLM_REQUESTS_TOTAL,
+    LLM_REQUEST_DURATION_SECONDS,
+    LLM_TOKENS_TOTAL,
+    LLM_TTFT_SECONDS,
 )
 
 from .base import BaseLLMProvider
@@ -185,6 +197,17 @@ class OllamaProvider(BaseLLMProvider):
 
             latency_ms = (time.time() - start_time) * 1000
             
+            # Record metrics
+            status = "success"
+            LLM_REQUESTS_TOTAL.labels(model=model, provider=self.provider_name, status=status).inc()
+            LLM_REQUEST_DURATION_SECONDS.labels(model=model, provider=self.provider_name).observe(time.time() - start_time)
+            
+            prompt_tokens = data.get("prompt_eval_count", 0)
+            completion_tokens = data.get("eval_count", 0)
+            LLM_TOKENS_TOTAL.labels(model=model, provider=self.provider_name, type="prompt").inc(prompt_tokens)
+            LLM_TOKENS_TOTAL.labels(model=model, provider=self.provider_name, type="completion").inc(completion_tokens)
+
+            
             message_data = data.get("message", {})
             content = message_data.get("content", "")
             tool_calls_data = message_data.get("tool_calls", [])
@@ -233,6 +256,7 @@ class OllamaProvider(BaseLLMProvider):
 
         except httpx.HTTPError as e:
             logger.error(f"Ollama API error: {e}")
+            LLM_REQUESTS_TOTAL.labels(model=model, provider=self.provider_name, status="error").inc()
             raise RuntimeError(f"Failed to get completion from Ollama: {e}")
 
     async def stream(
@@ -265,6 +289,9 @@ class OllamaProvider(BaseLLMProvider):
         if tools:
             payload["tools"] = tools
 
+        start_time = time.time()
+        first_token_received = False
+
         try:
             # Use a fresh client for streaming to avoid connection issues
             async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
@@ -275,6 +302,12 @@ class OllamaProvider(BaseLLMProvider):
                             import json
 
                             data = json.loads(line)
+                            
+                            if not first_token_received:
+                                ttft = time.time() - start_time
+                                LLM_TTFT_SECONDS.labels(model=model, provider=self.provider_name).observe(ttft)
+                                first_token_received = True
+
                             message_data = data.get("message", {})
                             content = message_data.get("content", "")
                             done = data.get("done", False)
@@ -304,6 +337,11 @@ class OllamaProvider(BaseLLMProvider):
                                         completion_tokens=data.get("eval_count", 0),
                                         total_tokens=data.get("prompt_eval_count", 0) + data.get("eval_count", 0)
                                     )
+                                    # Record metrics on completion
+                                    LLM_REQUESTS_TOTAL.labels(model=model, provider=self.provider_name, status="success").inc()
+                                    LLM_REQUEST_DURATION_SECONDS.labels(model=model, provider=self.provider_name).observe(time.time() - start_time)
+                                    LLM_TOKENS_TOTAL.labels(model=model, provider=self.provider_name, type="prompt").inc(usage.prompt_tokens)
+                                    LLM_TOKENS_TOTAL.labels(model=model, provider=self.provider_name, type="completion").inc(usage.completion_tokens)
 
                                 yield StreamChunk(
                                     content=content,
@@ -314,6 +352,7 @@ class OllamaProvider(BaseLLMProvider):
 
         except httpx.HTTPError as e:
             logger.error(f"Ollama streaming error: {e}")
+            LLM_REQUESTS_TOTAL.labels(model=model, provider=self.provider_name, status="error").inc()
             raise RuntimeError(f"Failed to stream from Ollama: {e}")
 
     async def health_check(self) -> bool:
