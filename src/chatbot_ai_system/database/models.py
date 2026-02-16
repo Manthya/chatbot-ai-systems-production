@@ -1,7 +1,7 @@
 from datetime import datetime
 import uuid
 from typing import Optional, List, Any
-from sqlalchemy import String, DateTime, Text, ForeignKey, Integer, JSON
+from sqlalchemy import String, DateTime, Text, ForeignKey, Integer, Float, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from pgvector.sqlalchemy import Vector
@@ -70,6 +70,27 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     conversation: Mapped["Conversation"] = relationship(back_populates="messages")
+    attachments: Mapped[List["MediaAttachment"]] = relationship(back_populates="message", cascade="all, delete-orphan")
+
+class MediaAttachment(Base):
+    """Phase 5.0: Media files attached to messages."""
+    __tablename__ = "media_attachments"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    message_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("messages.id"), index=True)
+    type: Mapped[str] = mapped_column(String)  # "image", "audio", "video"
+    mime_type: Mapped[str] = mapped_column(String)
+    file_path: Mapped[str] = mapped_column(String)  # local or S3 path
+    file_size_bytes: Mapped[int] = mapped_column(Integer)
+    original_filename: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    transcription: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # STT for audio
+    duration_seconds: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    width: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    height: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    message: Mapped["Message"] = relationship(back_populates="attachments")
+
 
 class Memory(Base):
     __tablename__ = "memories"

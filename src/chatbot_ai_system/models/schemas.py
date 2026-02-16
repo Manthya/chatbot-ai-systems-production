@@ -28,11 +28,26 @@ class ToolCall(BaseModel):
     type: str = "function"
 
 
+class MediaAttachment(BaseModel):
+    """A media file attached to a message."""
+
+    type: str  # "image", "audio", "video"
+    url: Optional[str] = None  # stored file URL / path
+    base64_data: Optional[str] = None  # inline base64 (for images sent to LLM)
+    mime_type: str  # "image/png", "audio/wav", etc.
+    filename: Optional[str] = None
+    duration_seconds: Optional[float] = None  # for audio/video
+    transcription: Optional[str] = None  # STT result for audio
+    width: Optional[int] = None  # for images/video
+    height: Optional[int] = None
+
+
 class ChatMessage(BaseModel):
     """A single chat message."""
 
     role: MessageRole
     content: str
+    attachments: Optional[List[MediaAttachment]] = None  # Phase 5.0: multimodal
     tool_calls: Optional[List[ToolCall]] = None
     tool_call_id: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -77,10 +92,9 @@ class StreamChunk(BaseModel):
     status: Optional[str] = None
     done: bool = False
     tool_calls: Optional[List[ToolCall]] = None
-    done: bool = False
-    tool_calls: Optional[List[ToolCall]] = None
     conversation_id: Optional[str] = None
     usage: Optional[UsageInfo] = None
+    audio_data: Optional[str] = None  # Phase 5.0: base64 TTS audio chunk
 
 
 class ConversationInfo(BaseModel):

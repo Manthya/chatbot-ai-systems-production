@@ -30,6 +30,7 @@ from chatbot_ai_system.tools.registry import ToolRegistry
 from chatbot_ai_system.tools import registry
 from chatbot_ai_system.services.embedding import EmbeddingService
 from chatbot_ai_system.database.redis import redis_client
+from chatbot_ai_system.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -64,12 +65,41 @@ class ChatOrchestrator:
     ) -> AsyncGenerator[StreamChunk, None]:
         """
         Main entry point for the orchestrator (Phase 3).
+        Supports multimodal input (Phase 5.0).
         """
         import time
         start_time = time.time()
         import uuid
         conv_uuid = uuid.UUID(conversation_id)
         semantic_context = ""
+
+        # --- Phase 5.0: Multimodal Detection ---
+        has_images = False
+        has_audio_transcription = False
+        last_user_msg = conversation_history[-1] if conversation_history else None
+        
+        if last_user_msg and last_user_msg.attachments:
+            for att in last_user_msg.attachments:
+                if att.type == "image" and att.base64_data:
+                    has_images = True
+                if att.type in ("audio", "video") and att.transcription:
+                    has_audio_transcription = True
+                    # Inject transcription into the message content
+                    if att.transcription not in (last_user_msg.content or ""):
+                        prefix = "[Audio transcription]" if att.type == "audio" else "[Video audio transcription]"
+                        last_user_msg.content = (
+                            f"{last_user_msg.content}\n\n{prefix}: {att.transcription}"
+                        ).strip()
+
+        # Auto-switch to vision model when images are present
+        if has_images:
+            settings = get_settings()
+            original_model = model
+            model = settings.vision_model
+            logger.info(
+                f"Phase 5.0: Detected image attachments — switching model "
+                f"from {original_model} to {model}"
+            )
 
         # Fetch Long-Term Memory (Phase 2 Addition)
         if user_id:
@@ -107,7 +137,9 @@ class ChatOrchestrator:
             pass
 
         # --- Phase 4: Intent Classification ---
-        intent = await self._classify_intent(user_input, model)
+        intent = await self._classify_intent(
+            user_input, model, has_media=(has_images or has_audio_transcription)
+        )
         logger.info(f"Phase 4: Classified intent as '{intent}'")
         INTENT_CLASSIFICATION_TOTAL.labels(intent=intent).inc()
 
@@ -433,10 +465,14 @@ class ChatOrchestrator:
         except Exception as e:
             logger.error(f"Failed to embed user message at seq {sequence_number}: {e}")
 
-    async def _classify_intent(self, user_input: str, model: str) -> str:
+    async def _classify_intent(self, user_input: str, model: str, has_media: bool = False) -> str:
         """
         Phase 4: Classify user intent to determine tool needs.
         """
+        # If media is present, skip LLM classifier — it's always VISION or GENERAL
+        if has_media:
+            return "GENERAL"
+
         # Simple zero-shot classifier
         classifier_messages = [
             ChatMessage(

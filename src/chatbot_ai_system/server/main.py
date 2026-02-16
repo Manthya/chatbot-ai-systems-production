@@ -11,6 +11,7 @@ from chatbot_ai_system.config import get_settings
 from chatbot_ai_system.database.redis import redis_client
 
 from .routes import router
+from .multimodal_routes import router as multimodal_router
 
 # Configure logging
 logging.basicConfig(
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
 
     # Include routes
     app.include_router(router)
+    app.include_router(multimodal_router)  # Phase 5.0: Upload, Voice
 
     # Initialize Prometheus Instrumentation
     Instrumentator().instrument(app).expose(app)

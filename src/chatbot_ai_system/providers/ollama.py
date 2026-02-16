@@ -125,11 +125,20 @@ class OllamaProvider(BaseLLMProvider):
             return None
 
     def _format_messages(self, messages: List[ChatMessage]) -> List[dict]:
-        """Format messages for Ollama API."""
+        """Format messages for Ollama API, including multimodal images."""
         formatted = []
         for msg in messages:
             m = {"role": msg.role.value, "content": msg.content}
             
+            # Phase 5.0: Include images from attachments for vision models
+            if msg.attachments:
+                images = [
+                    a.base64_data for a in msg.attachments
+                    if a.type == "image" and a.base64_data
+                ]
+                if images:
+                    m["images"] = images
+
             # For tool results, Ollama expects tool_call_id
             if msg.role == MessageRole.TOOL:
                 if msg.tool_call_id:

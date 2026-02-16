@@ -41,6 +41,17 @@ class Settings(BaseSettings):
     # Redis Configuration (Phase 2)
     redis_url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
 
+    # Phase 5.0: Multimodal & Voice
+    media_storage_path: str = Field(default="media", env="MEDIA_STORAGE_PATH")
+    max_upload_size_mb: int = Field(default=50, env="MAX_UPLOAD_SIZE_MB")
+    supported_image_types: str = "png,jpg,jpeg,gif,webp"
+    supported_audio_types: str = "wav,mp3,ogg,m4a,webm"
+    supported_video_types: str = "mp4,webm,mov"
+    stt_model: str = Field(default="base", env="STT_MODEL")
+    stt_device: str = Field(default="cpu", env="STT_DEVICE")
+    tts_voice: str = Field(default="en_US-lessac-medium", env="TTS_VOICE")
+    vision_model: str = Field(default="llava:7b", env="VISION_MODEL")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
