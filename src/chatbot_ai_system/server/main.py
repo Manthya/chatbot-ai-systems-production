@@ -44,6 +44,9 @@ def create_app() -> FastAPI:
     # Include routes
     app.include_router(router)
 
+    # Initialize Prometheus Instrumentation
+    Instrumentator().instrument(app).expose(app)
+
     @app.on_event("startup")
     async def startup_event():
         logger.info(f"Starting Chatbot AI System v{__version__}")
@@ -52,9 +55,6 @@ def create_app() -> FastAPI:
         
         # Initialize Redis
         await redis_client.connect(settings.redis_url)
-
-        # Initialize Prometheus Instrumentation
-        Instrumentator().instrument(app).expose(app)
         
         # Initialize and register MCP clients
         from chatbot_ai_system.tools.mcp_client import MCPClient
