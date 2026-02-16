@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+    curl nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
@@ -20,6 +20,8 @@ RUN poetry config virtualenvs.create false \
 
 # Copy application code
 COPY src/ ./src/
+COPY alembic.ini ./
+COPY alembic/ ./alembic/
 
 # Install the application
 RUN poetry install --no-interaction --no-ansi

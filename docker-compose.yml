@@ -15,6 +15,9 @@ services:
       - DEFAULT_LLM_PROVIDER=ollama
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - OLLAMA_MODEL=qwen2.5:14b-instruct
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_URL=postgresql+asyncpg://chatbot:password@postgres:5432/chatbot
+      - DATABASE_URL=postgresql+asyncpg://chatbot:password@postgres:5432/chatbot
     env_file:
       - .env
     extra_hosts:
@@ -68,13 +71,20 @@ services:
       - "9090:9090"
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./docker/prometheus/rules.yml:/etc/prometheus/rules.yml
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
 
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3000:3000"
+      - "3001:3000"
     volumes:
-      - ./docker/grafana:/etc/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./docker/grafana/dashboards:/etc/grafana/dashboards
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:

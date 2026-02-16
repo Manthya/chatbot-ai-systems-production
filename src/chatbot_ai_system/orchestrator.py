@@ -16,7 +16,14 @@ from chatbot_ai_system.models.schemas import (
     ChatMessage,
     MessageRole,
     StreamChunk,
+    StreamChunk,
     ToolCall,
+)
+from chatbot_ai_system.observability.metrics import (
+    ORCHESTRATOR_REQUEST_DURATION_SECONDS,
+    INTENT_CLASSIFICATION_TOTAL,
+    TOOL_EXECUTION_DURATION_SECONDS,
+    TOOL_EXECUTION_TOTAL,
 )
 from chatbot_ai_system.providers.ollama import OllamaProvider
 from chatbot_ai_system.tools.registry import ToolRegistry
@@ -58,6 +65,8 @@ class ChatOrchestrator:
         """
         Main entry point for the orchestrator (Phase 3).
         """
+        import time
+        start_time = time.time()
         import uuid
         conv_uuid = uuid.UUID(conversation_id)
         semantic_context = ""
@@ -100,6 +109,7 @@ class ChatOrchestrator:
         # --- Phase 4: Intent Classification ---
         intent = await self._classify_intent(user_input, model)
         logger.info(f"Phase 4: Classified intent as '{intent}'")
+        INTENT_CLASSIFICATION_TOTAL.labels(intent=intent).inc()
 
         # --- Phase 5: Tool Scope Reduction ---
         tools = await self._filter_tools(intent, user_input)
@@ -231,11 +241,16 @@ class ChatOrchestrator:
                 yield StreamChunk(content="", status=f"Executing {tool_name}...", done=False)
                 
                 try:
+                    tool_start = time.time()
                     tool = self.registry.get_tool(tool_name)
                     result = await tool.run(**tool_args)
+                    TOOL_EXECUTION_TOTAL.labels(tool_name=tool_name, status="success").inc()
                 except Exception as e:
                     logger.error(f"Tool execution failed: {e}")
+                    TOOL_EXECUTION_TOTAL.labels(tool_name=tool_name, status="error").inc()
                     result = f"Error executing tool {tool_name}: {e}"
+                finally:
+                    TOOL_EXECUTION_DURATION_SECONDS.labels(tool_name=tool_name).observe(time.time() - tool_start)
 
                 # Persist result
                 current_seq += 1
@@ -314,6 +329,9 @@ class ChatOrchestrator:
              # But we need to use 'await' safely. 
              # Let's await it to be safe for now, latency hit happens only every 20 turns.
              await self._summarize_conversation(conv_uuid, current_seq, last_summarized_seq, model)
+
+        # Record total duration
+        ORCHESTRATOR_REQUEST_DURATION_SECONDS.labels(intent=intent).observe(time.time() - start_time)
 
     async def _summarize_conversation(self, conversation_id: Any, current_seq: int, last_seq: int, model: str):
         """

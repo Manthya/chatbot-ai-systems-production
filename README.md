@@ -69,6 +69,8 @@ npm run dev
 - **Frontend**: http://localhost:3000
 - **API Docs**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
+- **Grafana**: http://localhost:3001 (User: `admin`, Pass: `admin`)
+- **Prometheus**: http://localhost:9090
 
 ---
 
@@ -434,6 +436,13 @@ MCP_FETCH_ENABLE=true
 - **Pydantic** - Data validation
 - **WebSockets** - Real-time streaming
 
+### DevOps & Observability
+- **Docker Compose** - Orchestration
+- **Prometheus** - Metrics Collection & Alerting
+- **Grafana** - Visualization & Dashboards
+- **Node Exporter** - System Metrics
+- **PostgreSQL** - Vector Database (pgvector)
+
 ### Frontend
 - **Next.js 14** - React framework
 - **TypeScript** - Type safety
@@ -453,6 +462,7 @@ MCP_FETCH_ENABLE=true
 - [x] **Phase 2.7**: Conversation Summarization (Warm Memory)
 - [x] **Phase 3.0**: Redis Caching & Performance Optimization
 - [x] **Phase 4.0**: Observability (Prometheus & Grafana) - [Docs](docs/phase_4.0.md)
+- [x] **Phase 4.1**: Observability Hardening & Validation - [Docs](docs/phase_4.1.md)
 - [ ] **Phase 5.0**: Vector Search (Cold Memory / RAG)
 - [ ] **Phase 6.0**: Multi-Provider Orchestration
 - [ ] **Phase 7.0**: Authentication & Multi-Tenancy
