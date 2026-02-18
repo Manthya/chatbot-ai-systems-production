@@ -4,6 +4,11 @@ Chat Orchestrator Module.
 This module implements the 9-phase architecture for handling chat requests,
 including intent classification, tool scope reduction, and orchestrating
 the interaction between the LLM and MCP tools.
+
+Phase 5.5: Adds agentic orchestration for complex multi-step tasks.
+- Combined classifier: INTENT + COMPLEXITY in one LLM call
+- SIMPLE queries → fast one-shot path (unchanged)
+- COMPLEX queries → Plan + ReAct agentic loop
 """
 
 import logging
@@ -15,7 +20,6 @@ from typing import List, Optional, Dict, Any, AsyncGenerator
 from chatbot_ai_system.models.schemas import (
     ChatMessage,
     MessageRole,
-    StreamChunk,
     StreamChunk,
     ToolCall,
 )
@@ -29,6 +33,7 @@ from chatbot_ai_system.providers.ollama import OllamaProvider
 from chatbot_ai_system.tools.registry import ToolRegistry
 from chatbot_ai_system.tools import registry
 from chatbot_ai_system.services.embedding import EmbeddingService
+from chatbot_ai_system.services.agentic_engine import AgenticEngine
 from chatbot_ai_system.database.redis import redis_client
 from chatbot_ai_system.config import get_settings
 
@@ -52,6 +57,7 @@ class ChatOrchestrator:
         self.conversation_repo = conversation_repo
         self.memory_repo = memory_repo
         self.embedding_service = EmbeddingService(base_url=provider.base_url)
+        self.agentic_engine = AgenticEngine(provider=provider, registry=registry)
 
     async def run(
         self,
@@ -136,24 +142,21 @@ class ChatOrchestrator:
             # We'll cache it after we've computed all parts
             pass
 
-        # --- Phase 4: Intent Classification ---
-        intent = await self._classify_intent(
+        # --- Phase 4+5.5: Intent + Complexity Classification ---
+        intent, complexity = await self.agentic_engine.classify_intent_and_complexity(
             user_input, model, has_media=(has_images or has_audio_transcription)
         )
-        logger.info(f"Phase 4: Classified intent as '{intent}'")
+        logger.info(f"Phase 4: intent='{intent}', complexity='{complexity}'")
         INTENT_CLASSIFICATION_TOTAL.labels(intent=intent).inc()
 
         # --- Phase 5: Tool Scope Reduction ---
-        tools = await self._filter_tools(intent, user_input)
-        logger.info(f"Phase 5: Selected tools: {[t['function']['name'] for t in tools]}")
+        if complexity == "COMPLEX":
+            tools = await self.agentic_engine.get_expanded_tools(intent, user_input)
+        else:
+            tools = await self._filter_tools(intent, user_input)
+        logger.info(f"Phase 5: Selected {len(tools)} tools: {[t['function']['name'] for t in tools]}")
 
-        # --- Phase 5.5: Semantic Memory Retrieval (Phase 3) ---
-        # Only do this if we don't have it from cache or if we want to refresh?
-        # For now, if we have it from cache, we might still want to refresh based on NEW user_input
-        # but the prompt says "Do not recompute the same prompt every turn".
-        # Actually, semantic context is query-dependent, so it SHOULD be recomputed.
-        # But "last N turns summary" and "user profile" are relatively stable.
-        
+        # --- Phase 5.5: Semantic Memory Retrieval ---
         if not semantic_context:
             try:
                 query_embedding = await self.embedding_service.generate_embedding(user_input)
@@ -171,25 +174,23 @@ class ChatOrchestrator:
             except Exception as e:
                 logger.error(f"Semantic memory retrieval failed: {e}")
 
-        # Update Context Cache (30-120 min sliding TTL)
+        # Update Context Cache
         await redis_client.set(context_cache_key, {
             "user_context": user_context,
             "semantic_context": semantic_context,
             "conv_summary": conv_summary
-        }, ttl=3600) # 1 hour
+        }, ttl=3600)
 
         # Prepare messages
         messages = list(conversation_history)
-        current_seq = len(conversation_history) # Start sequence number
+        current_seq = len(conversation_history)
         
         # Inject Dynamic System Prompt
         system_prompt = self._get_system_prompt(intent, bool(tools))
         if user_context:
             system_prompt += user_context
-        
         if semantic_context:
             system_prompt += semantic_context
-        
         if conv_summary:
             system_prompt += f"\n\nPrevious Conversation Summary:\n{conv_summary}\n"
 
@@ -197,8 +198,64 @@ class ChatOrchestrator:
             messages[0] = ChatMessage(role=MessageRole.SYSTEM, content=system_prompt)
         else:
             messages.insert(0, ChatMessage(role=MessageRole.SYSTEM, content=system_prompt))
+
+        # --- Phase 5.5: Route COMPLEX to Agentic Engine ---
+        if complexity == "COMPLEX" and tools:
+            logger.info(f"Phase 5.5: Routing to agentic Plan+ReAct engine")
+            self.last_usage = None  # Initialize usage tracking
             
-        # --- Phase 6: First LLM Call (Planning) ---
+            # Build conversation context for planner
+            conv_context = ""
+            if conv_summary:
+                conv_context = f"Previous context: {conv_summary}"
+            
+            # Create plan
+            tool_names = [t["function"]["name"] for t in tools]
+            plan = await self.agentic_engine.create_plan(
+                user_input, model, tool_names, conv_context
+            )
+            
+            # Execute plan with ReAct loop
+            agentic_content = ""
+            agentic_tool_calls = []
+            
+            async for chunk in self.agentic_engine.execute(
+                messages=messages,
+                model=model,
+                tools=tools,
+                plan=plan,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            ):
+                agentic_content += chunk.content
+                if chunk.usage:
+                    self.last_usage = chunk.usage
+                yield chunk
+            
+            # Persist final agentic response
+            current_seq += 1
+            msg = await self.conversation_repo.add_message(
+                conversation_id=conv_uuid,
+                role=MessageRole.ASSISTANT,
+                content=agentic_content,
+                sequence_number=current_seq,
+                metadata={"model": model, "type": "agentic", "plan": plan},
+                token_count_prompt=self.last_usage.prompt_tokens if self.last_usage else None,
+                token_count_completion=self.last_usage.completion_tokens if self.last_usage else None,
+                model=model
+            )
+            import asyncio
+            asyncio.create_task(self._embed_message(msg.id, agentic_content))
+            asyncio.create_task(self._embed_user_message(conv_uuid, current_seq - 1))
+            
+            # Summarization check
+            if (current_seq - last_summarized_seq) >= 20:
+                await self._summarize_conversation(conv_uuid, current_seq, last_summarized_seq, model)
+            
+            ORCHESTRATOR_REQUEST_DURATION_SECONDS.labels(intent=intent).observe(time.time() - start_time)
+            return
+
+        # --- Phase 6: Fast Path (SIMPLE) — One-shot flow (unchanged) ---
         current_tool_calls: List[ToolCall] = []
         full_content = ""
         self.last_usage = None # Track usage from stream

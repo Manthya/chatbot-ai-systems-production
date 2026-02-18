@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # Ollama Configuration
     ollama_base_url: str = Field(default="http://localhost:11434", env="OLLAMA_BASE_URL")
-    ollama_model: str = Field(default="llama3.2", env="OLLAMA_MODEL")
+    ollama_model: str = Field(default="qwen2.5:14b-instruct", env="OLLAMA_MODEL")
 
     # OpenAI Configuration (Phase 3)
     openai_api_key: str | None = None
