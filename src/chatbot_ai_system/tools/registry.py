@@ -152,9 +152,11 @@ class ToolRegistry:
                 continue # Already added or will be added
             
             # Simple keyword heuristic
-            if "read" in q and "read" in name: keyword_matches.append(tool.to_ollama_format())
-            elif "write" in q and "write" in name: keyword_matches.append(tool.to_ollama_format())
-            elif "search" in q and "search" in name: keyword_matches.append(tool.to_ollama_format())
+            if any(k in q for k in ["read", "view", "cat", "show"]) and "read" in name: keyword_matches.append(tool.to_ollama_format())
+            elif any(k in q for k in ["write", "create", "save"]) and "write" in name: keyword_matches.append(tool.to_ollama_format())
+            elif any(k in q for k in ["search", "find", "grep"]) and "search" in name: keyword_matches.append(tool.to_ollama_format())
+            elif any(k in q for k in ["list", "dir", "ls"]) and ("list" in name or "ls" in name or "dir" in name): keyword_matches.append(tool.to_ollama_format())
+            elif any(k in q for k in ["git", "status", "diff", "branch", "commit"]) and "git" in name: keyword_matches.append(tool.to_ollama_format())
             
         # Combine: Priority (Category match) > Keyword match
         for tool in priority_tools + keyword_matches:

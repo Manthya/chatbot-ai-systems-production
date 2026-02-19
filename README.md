@@ -272,6 +272,9 @@ python scripts/test_mcp_capabilities.py
 
 # Verify multimodal pipeline (image, audio, TTS, vision model)
 python scripts/test_multimodal.py
+
+# Verify performance and query routing (Phase 5.5)
+python scripts/verify_phase_5_5_real.py
 ```
 
 ---
@@ -352,6 +355,7 @@ chatbot-ai-systems-production/
 - [x] **Phase 4.0**: Observability (Prometheus & Grafana) — [Docs](docs/phase_4.0.md)
 - [x] **Phase 4.1**: Observability Hardening & Validation — [Docs](docs/phase_4.1.md)
 - [x] **Phase 5.0**: Multimodal Input & Voice Conversation — [Docs](docs/phase_5.0.md)
+- [x] **Phase 5.5**: Performance Optimization & Reliability — [Docs](docs/phase_5.5.md)
 - [ ] **Phase 6.0**: Multi-Provider Orchestration
 - [ ] **Phase 7.0**: Authentication & Multi-Tenancy
 

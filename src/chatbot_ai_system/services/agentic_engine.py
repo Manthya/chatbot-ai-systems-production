@@ -152,8 +152,18 @@ class AgenticEngine:
 
         # Parse complexity
         complexity = "SIMPLE"  # Default to fast path
-        if "COMPLEX" in text:
-            complexity = "COMPLEX"
+        
+        # Robust parsing: check for COMPLEX value specifically after the key
+        # We iterate lines to find the line with COMPLEXITY
+        for line in text.splitlines():
+            if "COMPLEXITY" in line:
+                # Get part after the key to avoid matching the key itself
+                try:
+                    val = line.upper().split("COMPLEXITY", 1)[1]
+                    if "COMPLEX" in val:
+                        complexity = "COMPLEX"
+                except IndexError:
+                    pass
 
         logger.info(
             f"Phase 5.5 classifier: intent={intent}, complexity={complexity} "
