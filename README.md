@@ -1,6 +1,6 @@
 # Chatbot AI System
 
-A production-grade, multi-tenant AI chatbot platform with multi-provider LLM support, WebSocket streaming, and modern UI.
+A production-grade, multi-tenant AI chatbot platform with multi-provider LLM support, multimodal input (image, audio, video), real-time voice conversation, WebSocket streaming, and modern UI.
 
 ## 🚀 Quick Start
 
@@ -8,8 +8,9 @@ A production-grade, multi-tenant AI chatbot platform with multi-provider LLM sup
 
 - **Python 3.11+** with Poetry
 - **Node.js 20+** with npm
-- **Docker & Docker Compose** (for PostgreSQL)
+- **Docker & Docker Compose** (for PostgreSQL & Redis)
 - **Ollama** (for local LLM) - [Install Ollama](https://ollama.ai/)
+- **FFmpeg** (for audio/video processing) - `brew install ffmpeg`
 
 ### 1. Setup Environment
 
@@ -22,7 +23,12 @@ cp .env.example .env
 cp frontend/.env.example frontend/.env.local
 ```
 
-### 2. Install Ollama and Tool Model
+> [!IMPORTANT]
+> **MCP Configuration**: The `.env` file includes sections for MCP server API keys.
+> You must populate these keys (e.g., `BRAVE_API_KEY`, `GITHUB_TOKEN`) to enable specific tools.
+> See [docs/MCP_SETUP.md](docs/MCP_SETUP.md) for a full guide.
+
+### 2. Install Ollama and Models
 
 ```bash
 # Install Ollama (macOS)
@@ -33,13 +39,19 @@ ollama serve
 
 # Pull Qwen 2.5 14B (Required for Decision Discipline)
 ollama pull qwen2.5:14b-instruct
+
+# Pull LLaVA 7B (Required for Image Understanding — Phase 5.0)
+ollama pull llava:7b
+
+# Pull Nomic embedding model (Required for Semantic Memory)
+ollama pull nomic-embed-text
 ```
 
 ### 3. Start Backend & Database
 
 ```bash
-# Start PostgreSQL Database
-docker-compose up -d postgres
+# Start PostgreSQL & Redis
+docker-compose up -d postgres redis
 
 # Install Python dependencies
 poetry install
@@ -74,30 +86,38 @@ npm run dev
 
 ---
 
-## 🏗️ System Design
-
-### High-Level Architecture
+## 🏗️ System Architecture
 
 ```mermaid
 flowchart TB
     subgraph Client["🖥️ Client Layer"]
         Browser["Browser"]
         UI["Next.js Frontend<br/>localhost:3000"]
+        Mic["🎤 Microphone"]
     end
     
     subgraph API["⚡ API Layer"]
         FastAPI["FastAPI Server<br/>localhost:8000"]
         REST["/api/chat<br/>REST Endpoint"]
         WS["/api/chat/stream<br/>WebSocket"]
+        Upload["/api/upload<br/>Media Upload"]
+        VoiceWS["/api/voice/stream<br/>Voice WebSocket"]
         Health["/health"]
     end
     
     subgraph Core["🧠 Core Layer"]
-        Router["Multi-Turn Request Router"]
-        Provider["LLM Provider (Ollama)"]
+        Orchestrator["Chat Orchestrator<br/>(9-Phase Pipeline)"]
+        Provider["LLM Provider"]
         Registry["Tool Registry"]
         MCPClient["MCP Client Layer"]
-        Orchestrator["Chat Orchestrator"]
+        MediaPipe["Media Pipeline"]
+    end
+
+    subgraph Multimodal["🖼️ Multimodal Layer"]
+        ImgProc["Image Processor<br/>(Pillow)"]
+        STT["STT Engine<br/>(Whisper)"]
+        TTS["TTS Engine<br/>(say/piper/espeak)"]
+        VidProc["Video Processor<br/>(OpenCV)"]
     end
 
     subgraph Data["💾 Data Layer (Hybrid Memory)"]
@@ -105,306 +125,138 @@ flowchart TB
         Vector["pgvector\n(Cold Memory)"]
         Summary["Summarization\n(Warm Memory)"]
         Window["Sliding Window\n(Hot Memory)"]
+        MediaDB["Media Attachments\nTable"]
     end
     
     subgraph Tools["🛠️ Tool Layer (MCP)"]
-        FS["Filesystem Server"]
-        Git["Git Server"]
-        Fetch["Fetch/Web Server"]
+        FS["Filesystem"]
+        Git["Git & GitHub"]
+        Web["Brave Search & Fetch"]
+        Brain["Sequential Thinking\n& SQLite"]
+        Time["Time & Memory"]
     end
 
-    subgraph Cache["⚡ Cache Layer (Fast Memory)"]
+    subgraph Cache["⚡ Cache Layer"]
         Redis[(Redis\nCache)]
     end
     
     subgraph LLM["🤖 LLM Layer"]
         Ollama["Ollama Server<br/>localhost:11434"]
-        Inference["qwen2.5:14b<br/>Inference Model"]
+        TextModel["qwen2.5:14b<br/>Text Model"]
+        VisionModel["llava:7b<br/>Vision Model"]
         Embed["nomic-embed-text<br/>Embedding Model"]
     end
     
     Browser --> UI
+    Mic --> UI
     UI -->|HTTP/REST| REST
     UI -.->|WebSocket| WS
-    REST --> Router
-    WS --> Router
-    Router --> Orchestrator
+    UI -->|File Upload| Upload
+    UI -.->|Voice| VoiceWS
+    REST --> Orchestrator
+    WS --> Orchestrator
+    Upload --> MediaPipe
+    VoiceWS --> STT & TTS
+    MediaPipe --> ImgProc & STT & VidProc
     Orchestrator --> Provider
     Orchestrator --> Registry
     Orchestrator --> Redis
-    Redis --> DB
-    Redis --> Vector
-    Redis --> Summary
-    Redis --> Window
     Provider --> Ollama
-    Ollama --> Inference
-    Ollama --> Embed
-    Registry --> MCPClient
-    MCPClient --> Redis
-    MCPClient --> FS
-    MCPClient --> Git
-    MCPClient --> Fetch
+    Ollama --> TextModel & VisionModel & Embed
+    Redis --> DB & Vector & Summary & Window
+    Registry --> MCPClient --> Tools
+    MediaPipe --> MediaDB
 ```
 
-### Request Flow (with Multi-Turn Tools)
+### Supported MCP Servers
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant B as Backend (FastAPI)
-    participant L as LLM (Ollama)
-    participant T as MCP Tools
-    
-    U->>B: POST /api/chat (query)
-    B->>L: Planning Phase (Use Tool?)
-    alt USE_TOOL
-        B->>L: Call LLM with History + Filtered Tools
-        L-->>B: Assistant Response (Tool Call or Content)
-        alt is Tool Call
-            B->>T: Execute Tool (e.g., read_file)
-            T-->>B: Tool Result
-            B->>B: Add Tool Result to History
-        else is Final Content
-            B->>B: Final Answer Ready
-        end
-    else NO_TOOL
-        B->>L: Call LLM (No tools exposed)
-        L-->>B: Natural Language Response
-    end
-    B-->>U: Final ChatResponse JSON
-```
+The system supports a wide range of MCP servers, dynamically loaded based on your `.env` configuration:
 
-### MCP Integration Flow
+- **Core**: Filesystem, Time, Memory (Knowledge Graph), PostgreSQL
+- **Researcher**: Brave Search, Puppeteer, Fetch (HTTP)
+- **Developer**: Git, GitHub, Docker, E2B Interpreter
+- **Brain**: Sequential Thinking, SQLite
+- **Connector**: Slack, Google Maps, Sentry
 
-The system uses the Model Context Protocol (MCP) to connect the LLM with external tools safe and effectively.
-
-#### 1. Startup: Tool Discovery
-When the server boots, it connects to local MCP servers to load tool schemas.
-
-```mermaid
-sequenceDiagram
-    participant M as Main (FastAPI)
-    participant R as Registry
-    participant C as MCP Client
-    participant S as MCP Server (Node.js)
-
-    M->>C: Initialize Client (e.g., Filesystem)
-    C->>S: Spawn Process (stdio)
-    M->>R: Register Client
-    M->>R: Refresh Tools
-    R->>S: JSON-RPC tools/list
-    S-->>R: Tool Schemas (Cached in Memory)
-```
-
-#### 2. Runtime: Tool Execution
-When the Orchestrator decides a tool call is needed:
-
-```mermaid
-sequenceDiagram
-    participant O as Orchestrator
-    participant R as Registry
-    participant C as MCP Client
-    participant S as MCP Server
-
-    O->>R: get_tool("git_status")
-    R-->>O: RemoteMCPTool Instance
-    O->>C: call_tool("git_status", args)
-    C->>S: JSON-RPC tools/call
-    S-->>C: Result Output
-    C-->>O: Return Result to LLM
-```
-
-```mermaid
-stateDiagram-v2
-    [*] --> Idle: Page Load
-    
-    Idle --> Composing: User types
-    Composing --> Sending: Press Enter
-    
-    Sending --> Processing: API Request
-    Processing --> ExecutingTool: LLM requests tool
-    ExecutingTool --> Processing: Tool result returned
-    
-    Processing --> Streaming: Receiving text
-    Streaming --> Complete: done=true
-    
-    Complete --> Idle
-    Error --> Idle
-```
-
-#### Step-by-Step Flow
-
-| Step | Component | Action | Details |
-|------|-----------|--------|---------|
-| 1 | **Frontend** | User submits query | Message sent to `/api/chat` |
-| 2 | **Backend** | Tool Discovery | registry fetches tools from MCP servers |
-| 3 | **Backend** | Planning Phase | Ask LLM: "USE_TOOL" or "NO_TOOL"? |
-| 4 | **Backend** | Tool Filtering | If USE_TOOL, filter tools by keywords |
-| 5 | **Backend** | LLM Call (Turn N) | Passes history + **Filtered Tools (Max 5)** |
-| 6 | **Ollama** | Model Inference | Model executes tool call (Strict JSON) |
-| 7 | **Backend** | Tool Execution | If tool requested, run via MCP Client |
-| 8 | **Backend** | Context Update | Append Assistant JSON + Tool Result (with `tool_call_id`) |
-| 9 | **Backend** | Final Answer | Loop breaks when LLM returns text instead of JSON |
-| 10 | **Frontend** | Display | Final response rendered in UI |
-
-#### Data Structures
-
-```typescript
-// Chat Message with Tool Support
-interface ChatMessage {
-  role: 'user' | 'assistant' | 'tool' | 'system'
-  content: string
-  tool_calls?: ToolCall[]   // Present in assistant role
-  tool_call_id?: string     // Present in tool role
-  timestamp: string
-}
-
-interface ToolCall {
-  id: string
-  type: 'function'
-  function: {
-    name: string
-    arguments: object
-  }
-}
-
-interface StreamChunk {
-  content: string
-  status?: string           // Real-time activity (e.g. "Thinking: read_file...")
-  done: boolean
-  tool_calls?: ToolCall[]
-  conversation_id?: string
-}
-
-// Backend Response
-interface ChatResponse {
-  message: ChatMessage
-  conversation_id: string
-  model: string
-  provider: string
-  latency_ms: number
-  usage: { prompt_tokens, completion_tokens }
-}
-```
-
-### Conversation Context & Tool Turn Flow
-
-This section explains how context is managed during multi-turn tool execution.
-
-#### Tool Context Flow
-
-```mermaid
-flowchart TD
-    U["User query"] --> A1["Assistant turn 1\n(Tool Call: read_file)"]
-    A1 --> T1["Tool execution turn\n(role: tool)"]
-    T1 --> A2["Assistant turn 2\n(Final Answer)"]
-```
-
-#### What the Model Sees - Multi-Turn Example
-
-**Turn 1: Initial Query**
-```json
-[
-  {"role": "system", "content": "You are a helpful assistant..."},
-  {"role": "user", "content": "What's in README.md?"}
-]
-```
-
-**Turn 2: Tool Request (from AI)**
-*Internal State: Backend receives tool request*
-```json
-[
-  {"role": "system", "content": "..."},
-  {"role": "user", "content": "What's in README.md?"},
-  {"role": "assistant", "content": "", "tool_calls": [{"id": "call_123", "function": {"name": "read_file", ...}}]}
-]
-```
-
-**Turn 3: Tool Result Injection**
-*Backend appends the tool output to history*
-```json
-[
-  {"role": "system", "content": "..."},
-  {"role": "user", "content": "What's in README.md?"},
-  {"role": "assistant", "content": "", "tool_calls": [{"id": "call_123", ...}]},
-  {"role": "tool", "content": "# Project Title...", "tool_call_id": "call_123"}
-]
-```
-Model receives: **4 messages** and now has the file content to answer the user.
-
-#### Backend Processing for Tools
-
-| Step | Component | Action |
-|------|-----------|--------|
-| 1 | `routes.py` | Add user message to history |
-| 2 | `ollama.py` | Call LLM with current history |
-| 3 | `ollama.py` | Parse JSON tool calls if model outputs raw text |
-| 4 | `routes.py` | If `tool_calls` present: execute via `registry.execute_tool` |
-| 5 | `routes.py` | Add `role: tool` message to history with result |
-| 6 | `routes.py` | Re-call LLM (Step 2) for final answer |
-
-#### Backend Processing Steps
-
-| Step | Code Location | What Happens | Data State |
-|------|---------------|--------------|------------|
-| 1 | `routes.py:85` | Get/create conversation_id | `"abc-123"` |
-| 2 | `routes.py:86-87` | Initialize empty list if new | `_conversations["abc-123"] = []` |
-| 3 | `routes.py:90-92` | Append new user messages | Add to history |
-| 4 | `routes.py:96` | Get ALL messages for context | `all_messages = _conversations["abc-123"]` |
-| 5 | `routes.py:98-103` | Send to LLM provider | **Model sees full history** |
-| 6 | `ollama.py:92-99` | Format for Ollama API | Convert to `[{role, content}]` |
-| 7 | `ollama.py:105` | POST to Ollama | Inference with context |
-| 8 | `routes.py:106` | Append AI response | Store assistant message |
-
-#### Key Points
-
-> [!IMPORTANT]
-> **Context Window**: The model sees the **entire conversation history** on every turn. This allows it to:
-> - Remember previous questions
-> - Maintain conversation continuity
-> - Reference earlier topics
-> - Build on previous answers
-
-> [!NOTE]
-> **Persistence**: The system now uses **PostgreSQL** to store conversation history and long-term memories. Data persists across server restarts.
-
-> [!TIP]
-> **Token Efficiency**: Currently, no token limit is enforced. In production, you should:
-> - Limit conversation history length
-> - Implement sliding window (e.g., last 10 messages)
-> - Use summarization for very long conversations
-
-
-
-
-### Component Structure
-
-```
-├── src/chatbot_ai_system/    # Backend application
-│   ├── server/               # FastAPI app and multi-turn routes
-│   ├── providers/            # LLM providers (Ollama with JSON parsing)
-│   ├── models/               # Pydantic schemas (tool_call_id supported)
-│   ├── tools/                # MCP Tool implementation & registry
-│   └── config/               # Configuration management
-├── scripts/                  # Validation & benchmarking scripts
-├── phase_1.1.md              # Detailed Optimization Report
-├── phase_1.2.md              # Decision Discipline Report
-├── phase_1.3.md              # Chat Orchestrator Documentation
-├── frontend/                 # Next.js frontend
-└── tests/                    # Test suites
-```
+See `src/chatbot_ai_system/config/mcp_server_config.py` for dynamic loading logic.
 
 ---
 
-## 📡 API Endpoints
+## ⚡ Adaptive Execution Flow (Phase 5.5)
+
+The system employs a smart routing mechanism to optimize latency and performance based on query complexity.
+
+```mermaid
+flowchart TD
+    User["User Query"] --> Classify{Intent Classifier}
+    
+    Classify -->|Simple Info| FastPath["🚀 FAST PATH<br/>(Direct Response)"]
+    Classify -->|Simple Tool| MedPath["🛠️ TOOL PATH<br/>(One-shot Execution)"]
+    Classify -->|Complex/Reasoning| SlowPath["🧠 AGENTIC PATH<br/>(Plan + ReAct Loop)"]
+    
+    FastPath --> LLM[LLM Response]
+    MedPath --> Registry[Tool Registry] --> LLM
+    
+    SlowPath --> Planner[Sequential Thinking]
+    Planner --> ReAct[ReAct Loop]
+    ReAct --> Registry
+    ReAct --> ReAct
+    ReAct --> LLM
+```
+
+| Path | Complexity | Description | Typical Latency |
+| :--- | :--- | :--- | :--- |
+| **Fast Path** | `SIMPLE` | Direct LLM response for greetings, facts, and definitions. Tools are explicitly disabled to save tokens and time. | **~5-8s** |
+| **Tool Path** | `SIMPLE` | Single-step tool usage for straightforward tasks (e.g., "List files", "Read specific file"). Uses broad keyword matching. | **~20-40s** |
+| **Agentic Path** | `COMPLEX` | Full reasoning loop for multi-step tasks (e.g., "Analyze codebase", "Compare files"). Uses the Sequential Thinking planner. | **60s+** |
+
+---
+
+## 🖼️ Multimodal Capabilities (Phase 5.0)
+
+The chatbot accepts image, audio, and video input and can hold real-time voice conversations.
+
+### Image Understanding
+
+Upload an image via `POST /api/upload` or attach it to a chat message. The orchestrator auto-detects image attachments and switches to the **llava:7b** vision model:
+
+```bash
+# Upload and analyze an image
+curl -F "file=@photo.png" http://localhost:8000/api/upload
+```
+
+### Voice Conversation
+
+Connect via WebSocket for full-duplex voice:
+
+| Direction | Format | Content |
+|-----------|--------|---------|
+| Client → Server | Binary | 16kHz 16-bit PCM mono audio |
+| Client → Server | JSON | `{"type": "end_turn"}` |
+| Server → Client | JSON | Transcription, response text |
+| Server → Client | Binary | WAV audio response |
+
+### Audio & Video Processing
+
+- **Audio**: Converted to 16kHz mono WAV, transcribed via Whisper STT, transcription injected into chat context.
+- **Video**: Keyframes extracted at 5-second intervals, audio track transcribed.
+
+See [docs/phase_5.0.md](docs/phase_5.0.md) for full architecture and protocol details.
+
+---
+
+## 🔌 API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/api/chat` | POST | Send message and get response |
-| `/api/chat/stream` | WebSocket | Streaming chat responses |
-| `/api/conversations` | GET | List conversations |
-| `/api/conversations/{id}` | GET | Get conversation messages |
+| `/api/chat` | POST | Send a chat message (REST) |
+| `/api/chat/stream` | WebSocket | Stream chat responses |
+| `/api/upload` | POST | Upload media (image/audio/video) |
+| `/api/voice/config` | GET | Voice capability info |
+| `/api/voice/stream` | WebSocket | Real-time voice conversation |
+| `/docs` | GET | Swagger UI |
+| `/metrics` | GET | Prometheus metrics |
 
 ---
 
@@ -418,10 +270,41 @@ DEFAULT_LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2.5:14b-instruct
 
-# MCP Servers (Configured in registry.py)
-MCP_FS_ENABLE=true
-MCP_GIT_ENABLE=true
-MCP_FETCH_ENABLE=true
+# Database & Cache
+DATABASE_URL=postgresql+asyncpg://user:password@localhost/dbname
+POSTGRES_URL=postgresql://user:password@localhost/dbname
+REDIS_URL=redis://localhost:6379/0
+
+# MCP Capabilities (Add keys to enable)
+BRAVE_API_KEY=...
+GITHUB_TOKEN=...
+SLACK_BOT_TOKEN=...
+GOOGLE_MAPS_API_KEY=...
+E2B_API_KEY=...
+SENTRY_AUTH_TOKEN=...
+
+# Phase 5.0: Multimodal & Voice
+MEDIA_STORAGE_PATH=media
+MAX_UPLOAD_SIZE_MB=50
+VISION_MODEL=llava:7b
+STT_MODEL=base
+STT_DEVICE=cpu
+TTS_VOICE=en_US-lessac-medium
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+# Verify MCP integration and tool execution
+python scripts/test_mcp_capabilities.py
+
+# Verify multimodal pipeline (image, audio, TTS, vision model)
+python scripts/test_multimodal.py
+
+# Verify performance and query routing (Phase 5.5)
+python scripts/verify_phase_5_5_real.py
 ```
 
 ---
@@ -429,42 +312,81 @@ MCP_FETCH_ENABLE=true
 ## 🛠️ Technology Stack
 
 ### Backend
-- **FastAPI** - Modern Python web framework
-- **Redis** - High-performance caching layer
-- **Model Context Protocol (MCP)** - Standard for connecting LLMs to tools
-- **Ollama** - Local LLM inference
-- **Pydantic** - Data validation
-- **WebSockets** - Real-time streaming
+- **FastAPI** — Modern Python web framework with async support
+- **SQLAlchemy** — Async ORM with PostgreSQL
+- **Redis** — High-performance caching layer (context cache, session)
+- **Model Context Protocol (MCP)** — Standard for connecting LLMs to external tools
+- **Ollama** — Local LLM inference (text, vision, embedding)
+- **Pydantic** — Data validation and settings management
+- **WebSockets** — Real-time streaming for chat and voice
+
+### Multimodal & Voice
+- **faster-whisper** — Speech-to-text (Whisper reimplementation, int8 quantized)
+- **Pillow** — Image processing (resize, format conversion, base64 encoding)
+- **pydub + FFmpeg** — Audio format conversion (any format → 16kHz WAV)
+- **OpenCV** — Video keyframe extraction
+- **piper-tts / macOS say / espeak** — Text-to-speech (auto-detected backend)
+- **llava:7b** — Vision model for image understanding
+
+### Data & Memory
+- **PostgreSQL** — Persistent storage with pgvector for semantic search
+- **pgvector** — Vector embeddings for cold memory / RAG
+- **Alembic** — Database migrations
 
 ### DevOps & Observability
-- **Docker Compose** - Orchestration
-- **Prometheus** - Metrics Collection & Alerting
-- **Grafana** - Visualization & Dashboards
-- **Node Exporter** - System Metrics
-- **PostgreSQL** - Vector Database (pgvector)
+- **Docker Compose** — Orchestration (PostgreSQL, Redis, Prometheus, Grafana)
+- **Prometheus** — Metrics collection & alerting
+- **Grafana** — Visualization & dashboards (port 3001)
+- **Node Exporter** — System-level metrics (CPU, memory)
 
 ### Frontend
-- **Next.js 14** - React framework
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
+- **Next.js 14** — React framework
+- **TypeScript** — Type safety
+- **Tailwind CSS** — Styling
+
+---
+
+## 📂 Project Structure
+
+```
+chatbot-ai-systems-production/
+├── src/chatbot_ai_system/
+│   ├── config/              # Settings, MCP server config
+│   ├── database/            # SQLAlchemy models, session, Redis
+│   ├── models/              # Pydantic schemas (ChatMessage, MediaAttachment)
+│   ├── observability/       # Prometheus metrics
+│   ├── orchestrator.py      # 9-phase chat orchestrator
+│   ├── providers/           # LLM providers (Ollama, OpenAI, Anthropic)
+│   ├── repositories/        # DB repositories (conversation, memory)
+│   ├── server/              # FastAPI routes, multimodal routes
+│   ├── services/            # Media pipeline, STT, TTS, embedding
+│   └── tools/               # MCP tool registry and client
+├── frontend/                # Next.js frontend
+├── alembic/                 # Database migrations
+├── docker/                  # Prometheus, Grafana config
+├── scripts/                 # Test and utility scripts
+└── docs/                    # Phase documentation
+```
 
 ---
 
 ## 📈 Roadmap
 
-- [x] **Phase 1**: Core Chatbot with Open Source LLM
-- [x] **Phase 1.1**: MCP Tool Support & Streaming Execution
-- [x] **Phase 1.2**: Decision Discipline (Smart Routing & Planning)
-- [x] **Phase 1.3**: Chat Orchestrator (9-Phase Architecture)
-- [x] **Phase 2**: Data Persistence & User Memory (PostgreSQL)
-- [x] **Phase 2.5**: Observability & Schema Scaling
+- [x] **Phase 1.0**: Core Chatbot with Open Source LLM
+- [x] **Phase 1.1**: MCP Tool Support & Streaming Execution — [Docs](docs/phase_1.1.md)
+- [x] **Phase 1.2**: Decision Discipline (Smart Routing & Planning) — [Docs](docs/phase_1.2.md)
+- [x] **Phase 1.3**: Chat Orchestrator (9-Phase Architecture) — [Docs](docs/phase_1.3.md)
+- [x] **Phase 2.0**: Data Persistence & User Memory (PostgreSQL) — [Docs](docs/phase_2.0.md)
+- [x] **Phase 2.2**: Embedding & Semantic Search — [Docs](docs/phase_2.2.md)
+- [x] **Phase 2.5**: Observability & Schema Scaling — [Docs](docs/phase_2.5.md)
 - [x] **Phase 2.6**: Sliding Window Context (Hot Memory)
 - [x] **Phase 2.7**: Conversation Summarization (Warm Memory)
-- [x] **Phase 3.0**: Redis Caching & Performance Optimization
-- [x] **Phase 4.0**: Observability (Prometheus & Grafana) - [Docs](docs/phase_4.0.md)
-- [x] **Phase 4.1**: Observability Hardening & Validation - [Docs](docs/phase_4.1.md)
-- [ ] **Phase 5.0**: Vector Search (Cold Memory / RAG)
-- [ ] **Phase 6.0**: Multi-Provider Orchestration
+- [x] **Phase 3.0**: Redis Caching & Performance Optimization — [Docs](docs/phase_3.0.md)
+- [x] **Phase 4.0**: Observability (Prometheus & Grafana) — [Docs](docs/phase_4.0.md)
+- [x] **Phase 4.1**: Observability Hardening & Validation — [Docs](docs/phase_4.1.md)
+- [x] **Phase 5.0**: Multimodal Input & Voice Conversation — [Docs](docs/phase_5.0.md)
+- [x] **Phase 5.5**: Performance Optimization & Reliability — [Docs](docs/phase_5.5.md)
+- [x] **Phase 6.0**: Multi-Provider Orchestration (OpenAI, Anthropic, Gemini) — [Docs](docs/phase_6.0.md)
 - [ ] **Phase 7.0**: Authentication & Multi-Tenancy
 
 ---

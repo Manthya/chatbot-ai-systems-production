@@ -86,45 +86,83 @@ class ToolRegistry:
                 # Log error but continue
                 print(f"Error fetching tools from client: {e}")
 
+    def get_categories(self) -> List[str]:
+        """Get list of available tool categories (MCP client names + GENERAL)."""
+        categories = ["GENERAL"]
+        for client in self._mcp_clients:
+            if client.name.upper() not in categories:
+                categories.append(client.name.upper())
+        return categories
+
+    def get_tools_by_category(self, category: str) -> List[Dict[str, Any]]:
+        """Get tools belonging to a specific category (client name)."""
+        category = category.upper()
+        tools = []
+        
+        # General tools (local)
+        if category == "GENERAL":
+            for tool in self._tools.values():
+                tools.append(tool.to_ollama_format())
+            return tools
+
+        # MCP tools
+        for name, tool in self._remote_tools_cache.items():
+            if isinstance(tool, RemoteMCPTool) and tool.client.name.upper() == category:
+                tools.append(tool.to_ollama_format())
+                
+        return tools
+
     async def get_ollama_tools(self, query: Optional[str] = None) -> List[Dict]:
         """Get filtered tools in Ollama format based on query."""
-        MAX_TOOLS = 5
+        MAX_TOOLS = 8  # Increased for agentic mode
         
-        # Get all available tools
-        local_tools = [t for t in self._tools.values()]
-        remote_tools = [t for t in self._remote_tools_cache.values()]
-        all_tools = local_tools + remote_tools
-
         if not query:
-            # If no query, return an empty list or a default set (we'll prefer empty for "Decision Discipline")
             return []
 
-        # Step 2 & 8: Filter tools based on keywords and enforce MAX_TOOLS
         q = query.lower()
         filtered = []
-        
-        # Filesystem
-        if any(k in q for k in ["file", "read", "directory", "path", "folder", "list", "write", "search"]):
-             filtered.extend([t for t in all_tools if t.name in ["read_file", "list_directory", "write_file", "search_files", "get_file_info"]])
-        
-        # Git
-        if any(k in q for k in ["git", "commit", "branch", "log", "diff", "repo", "status", "push"]):
-            filtered.extend([t for t in all_tools if t.name.startswith("git_") or t.name == "check_repo_status"])
-            
-        # Fetch / Web
-        if any(k in q for k in ["fetch", "url", "http", "website", "html", "get", "download"]):
-            filtered.extend([t for t in all_tools if t.name == "fetch_html"])
-            
-        # Time
-        if any(k in q for k in ["time", "now", "date", "clock"]):
-            filtered.extend([t for t in all_tools if t.name == "get_current_time"])
-
-        # Deduplicate and limit
         seen = set()
-        final_tools = []
-        for t in filtered:
-            if t.name not in seen:
-                final_tools.append(t.to_ollama_format())
-                seen.add(t.name)
         
-        return final_tools[:MAX_TOOLS]
+        # 1. Dynamic Category Matching
+        # If query mentions a category name (e.g. "git", "postgres"), prioritize its tools
+        categories = self.get_categories()
+        priority_tools = []
+        
+        for cat in categories:
+            if cat == "GENERAL": continue
+            # Check if category name is in query
+            if cat.lower() in q:
+                cat_tools = self.get_tools_by_category(cat)
+                priority_tools.extend(cat_tools)
+        
+        # 2. Keyword Matching (Fallback/Supplement)
+        # We still need some keyword matching for intents that don't match client name exactly
+        # e.g. "file" -> FILESYSTEM (if client is named "filesystem")
+        # For now, we assume client names are descriptive enough (filesystem, git, fetch)
+        
+        # Also include GENERAL tools always if relevant? 
+        # Actually, let's include tools whose names match keywords in query
+        all_tools = list(self._tools.values()) + list(self._remote_tools_cache.values())
+        
+        keyword_matches = []
+        tokens = q.split()
+        for tool in all_tools:
+            name = tool.name.lower()
+            if any(t in name for t in tokens) or tool.name in [t["function"]["name"] for t in priority_tools]:
+                continue # Already added or will be added
+            
+            # Simple keyword heuristic
+            if any(k in q for k in ["read", "view", "cat", "show"]) and "read" in name: keyword_matches.append(tool.to_ollama_format())
+            elif any(k in q for k in ["write", "create", "save"]) and "write" in name: keyword_matches.append(tool.to_ollama_format())
+            elif any(k in q for k in ["search", "find", "grep"]) and "search" in name: keyword_matches.append(tool.to_ollama_format())
+            elif any(k in q for k in ["list", "dir", "ls"]) and ("list" in name or "ls" in name or "dir" in name): keyword_matches.append(tool.to_ollama_format())
+            elif any(k in q for k in ["git", "status", "diff", "branch", "commit"]) and "git" in name: keyword_matches.append(tool.to_ollama_format())
+            
+        # Combine: Priority (Category match) > Keyword match
+        for tool in priority_tools + keyword_matches:
+            name = tool["function"]["name"]
+            if name not in seen:
+                filtered.append(tool)
+                seen.add(name)
+        
+        return filtered[:MAX_TOOLS]

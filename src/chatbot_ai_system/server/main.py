@@ -11,6 +11,7 @@ from chatbot_ai_system.config import get_settings
 from chatbot_ai_system.database.redis import redis_client
 
 from .routes import router
+from .multimodal_routes import router as multimodal_router
 
 # Configure logging
 logging.basicConfig(
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
 
     # Include routes
     app.include_router(router)
+    app.include_router(multimodal_router)  # Phase 5.0: Upload, Voice
 
     # Initialize Prometheus Instrumentation
     Instrumentator().instrument(app).expose(app)
@@ -59,42 +61,38 @@ def create_app() -> FastAPI:
         # Initialize and register MCP clients
         from chatbot_ai_system.tools.mcp_client import MCPClient
         from chatbot_ai_system.tools import registry
+        from chatbot_ai_system.config.mcp_server_config import get_mcp_servers
         import os
         
-        # Filesystem MCP - restrict to current working directory
-        fs_client = MCPClient(
-            name="filesystem",
-            command="npx",
-            args=[
-                "-y",
-                "@modelcontextprotocol/server-filesystem",
-                os.getcwd()
-            ],
-            env=os.environ.copy()
-        )
-        registry.register_mcp_client(fs_client)
+        # Load MCP servers from configuration
+        servers = get_mcp_servers()
+        logger.info(f"Loading {len(servers)} MCP servers...")
         
-        # Git MCP
-        git_client = MCPClient(
-            name="git",
-            command="npx",
-            args=["-y", "@mseep/git-mcp-server"],
-            env=os.environ.copy()
-        )
-        registry.register_mcp_client(git_client)
-        
-        # Fetch MCP
-        fetch_client = MCPClient(
-            name="fetch",
-            command="npx",
-            args=["-y", "zcaceres/fetch-mcp"],
-            env=os.environ.copy()
-        )
-        registry.register_mcp_client(fetch_client)
+        for server_config in servers:
+            try:
+                # Check for required env vars again (safety check)
+                missing_vars = [var for var in server_config.required_env_vars if not server_config.env_vars.get(var) and not os.environ.get(var)]
+                if missing_vars:
+                    logger.warning(f"Skipping MCP server {server_config.name}: Missing required environment variables: {', '.join(missing_vars)}")
+                    continue
+
+                client = MCPClient(
+                    name=server_config.name,
+                    command=server_config.command,
+                    args=server_config.args,
+                    env=server_config.env_vars or os.environ.copy()
+                )
+                registry.register_mcp_client(client)
+                logger.info(f"Registered MCP server: {server_config.name}")
+            except Exception as e:
+                logger.error(f"Failed to register MCP server {server_config.name}: {e}")
         
         # Refresh tools
-        await registry.refresh_remote_tools()
-        logger.info("MCP servers registered and tools refreshed")
+        try:
+            await registry.refresh_remote_tools()
+            logger.info("MCP servers registered and tools refreshed")
+        except Exception as e:
+            logger.error(f"Error refreshing MCP tools: {e}")
 
     @app.on_event("shutdown")
     async def shutdown_event():
