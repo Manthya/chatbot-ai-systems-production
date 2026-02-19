@@ -182,6 +182,36 @@ See `src/chatbot_ai_system/config/mcp_server_config.py` for dynamic loading logi
 
 ---
 
+## ⚡ Adaptive Execution Flow (Phase 5.5)
+
+The system employs a smart routing mechanism to optimize latency and performance based on query complexity.
+
+```mermaid
+flowchart TD
+    User["User Query"] --> Classify{Intent Classifier}
+    
+    Classify -->|Simple Info| FastPath["🚀 FAST PATH<br/>(Direct Response)"]
+    Classify -->|Simple Tool| MedPath["🛠️ TOOL PATH<br/>(One-shot Execution)"]
+    Classify -->|Complex/Reasoning| SlowPath["🧠 AGENTIC PATH<br/>(Plan + ReAct Loop)"]
+    
+    FastPath --> LLM[LLM Response]
+    MedPath --> Registry[Tool Registry] --> LLM
+    
+    SlowPath --> Planner[Sequential Thinking]
+    Planner --> ReAct[ReAct Loop]
+    ReAct --> Registry
+    ReAct --> ReAct
+    ReAct --> LLM
+```
+
+| Path | Complexity | Description | Typical Latency |
+| :--- | :--- | :--- | :--- |
+| **Fast Path** | `SIMPLE` | Direct LLM response for greetings, facts, and definitions. Tools are explicitly disabled to save tokens and time. | **~5-8s** |
+| **Tool Path** | `SIMPLE` | Single-step tool usage for straightforward tasks (e.g., "List files", "Read specific file"). Uses broad keyword matching. | **~20-40s** |
+| **Agentic Path** | `COMPLEX` | Full reasoning loop for multi-step tasks (e.g., "Analyze codebase", "Compare files"). Uses the Sequential Thinking planner. | **60s+** |
+
+---
+
 ## 🖼️ Multimodal Capabilities (Phase 5.0)
 
 The chatbot accepts image, audio, and video input and can hold real-time voice conversations.
