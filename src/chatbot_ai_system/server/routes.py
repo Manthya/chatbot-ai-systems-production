@@ -23,7 +23,8 @@ from chatbot_ai_system.models.schemas import (
     ToolCall,
     MessageRole,
 )
-from chatbot_ai_system.providers import OllamaProvider
+from chatbot_ai_system.providers.base import BaseLLMProvider
+from chatbot_ai_system.providers.factory import ProviderFactory
 from chatbot_ai_system.tools import registry
 from chatbot_ai_system.orchestrator import ChatOrchestrator
 from chatbot_ai_system.repositories.conversation import ConversationRepository
@@ -34,17 +35,9 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter()
 
-# Provider instances
-_providers: Dict[str, OllamaProvider] = {}
-
-def get_provider(name: str = "ollama") -> OllamaProvider:
+def get_provider(name: str = "ollama") -> BaseLLMProvider:
     """Get or create a provider instance."""
-    if name not in _providers:
-        if name == "ollama":
-            _providers[name] = OllamaProvider()
-        else:
-            raise ValueError(f"Unknown provider: {name}")
-    return _providers[name]
+    return ProviderFactory.get_provider(name)
 
 # Helper to simulate auth
 def get_current_user_id() -> uuid.UUID:

@@ -29,7 +29,7 @@ from chatbot_ai_system.observability.metrics import (
     TOOL_EXECUTION_DURATION_SECONDS,
     TOOL_EXECUTION_TOTAL,
 )
-from chatbot_ai_system.providers.ollama import OllamaProvider
+from chatbot_ai_system.providers.base import BaseLLMProvider
 from chatbot_ai_system.tools.registry import ToolRegistry
 from chatbot_ai_system.tools import registry
 from chatbot_ai_system.services.embedding import EmbeddingService
@@ -47,7 +47,7 @@ class ChatOrchestrator:
 
     def __init__(
         self, 
-        provider: OllamaProvider, 
+        provider: BaseLLMProvider, 
         registry: ToolRegistry,
         conversation_repo: Any, # Avoid circular import type hint issues or use TYPE_CHECKING
         memory_repo: Any
@@ -56,7 +56,8 @@ class ChatOrchestrator:
         self.registry = registry
         self.conversation_repo = conversation_repo
         self.memory_repo = memory_repo
-        self.embedding_service = EmbeddingService(base_url=provider.base_url)
+        # Always use Ollama for embeddings (Hybrid Architecture)
+        self.embedding_service = EmbeddingService(base_url=self.settings.ollama_base_url)
         self.agentic_engine = AgenticEngine(provider=provider, registry=registry)
 
     async def run(

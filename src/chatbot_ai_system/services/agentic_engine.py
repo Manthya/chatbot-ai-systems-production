@@ -44,7 +44,7 @@ class AgenticEngine:
     def __init__(self, provider, registry):
         """
         Args:
-            provider: OllamaProvider instance
+            provider: BaseLLMProvider instance
             registry: ToolRegistry instance
         """
         self.provider = provider

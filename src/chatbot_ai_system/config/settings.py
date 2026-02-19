@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-3-haiku-20240307"
 
+    # Gemini Configuration (Phase 6)
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-1.5-flash"
+
     # CORS Configuration
     frontend_url: str = "http://localhost:3000"
     cors_origins: List[str] = ["http://localhost:3000", "http://localhost:8000"]
