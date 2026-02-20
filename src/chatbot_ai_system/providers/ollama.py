@@ -87,16 +87,32 @@ class OllamaProvider(BaseLLMProvider):
             # It's a simple heuristic and might need refinement
             # We look for something that starts with { and contains "name" and "arguments"
             
-            # First, try to find a code block containing JSON
+            # First, try to parse the entire content as a single JSON object
+            try:
+                data = json.loads(content)
+                if isinstance(data, dict):
+                    name = data.get("name") or data.get("function", {}).get("name")
+                    args = data.get("arguments") or data.get("parameters") or data.get("function", {}).get("arguments", {})
+                    if name:
+                         return [ToolCall(
+                             function=ToolCallFunction(
+                                 name=name,
+                                 arguments=args,
+                             )
+                         )]
+            except (json.JSONDecodeError, AttributeError):
+                pass
+
+            # Next, try to find a code block containing JSON
             code_block_pattern = r"```(?:json)?\s*(\{.*?\})\s*```"
             matches = re.findall(code_block_pattern, content, re.DOTALL)
             
             if not matches:
                 # Try to find raw JSON object in the text if no code block
                 # Non-greedy match for { ... }
-                # We expect "name": "..." and "arguments": { ... }
-                raw_pattern = r"(\{.*?\"name\"\s*:\s*\".*?\".*?\"arguments\"\s*:\s*\{.*?\}.*?\})"
-                matches = re.findall(raw_pattern, content, re.DOTALL)
+                # We expect "name": "..." and "arguments" (or "parameters"): { ... }
+                raw_pattern = r"(\{.*?\"name\"\s*:\s*\".*?\".*?\"(arguments|parameters)\"\s*:\s*\{.*?\}.*?\})"
+                matches = [m[0] for m in re.findall(raw_pattern, content, re.DOTALL)]
 
             tool_calls = []
             for match in matches:
@@ -104,7 +120,7 @@ class OllamaProvider(BaseLLMProvider):
                     data = json.loads(match)
                     # Support both OpenAI/Ollama format and simpler variations
                     name = data.get("name") or data.get("function", {}).get("name")
-                    args = data.get("arguments") or data.get("function", {}).get("arguments", {})
+                    args = data.get("arguments") or data.get("parameters") or data.get("function", {}).get("arguments", {})
                     
                     if name and name != "null":
                         tool_calls.append(

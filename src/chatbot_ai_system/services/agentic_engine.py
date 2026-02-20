@@ -461,6 +461,7 @@ class AgenticEngine:
                 parsed = self.provider._try_parse_tool_calls(full_content)
                 if parsed:
                     current_tool_calls = parsed
+                    full_content = "" # Clear raw JSON
 
             # --- No tool calls = LLM produced final answer ---
             if not current_tool_calls:
@@ -609,5 +610,6 @@ class AgenticEngine:
             "4. If a step reveals unexpected information, adapt your approach.\n"
             "5. When you have enough information to answer, respond with text (no tool call).\n"
             "6. Keep each tool call focused — prefer one call per step.\n"
-            f"7. Maximum {MAX_AGENT_ROUNDS} rounds allowed.\n"
+            "7. If a step involves writing code or calculating, you MUST use the 'run_python_script' tool if available rather than simulating it.\n"
+            f"8. Maximum {MAX_AGENT_ROUNDS} rounds allowed.\n"
         )

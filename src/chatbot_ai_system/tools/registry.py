@@ -1,5 +1,7 @@
 from typing import Dict, List, Type, Any, Optional
 from .base import MCPTool
+from .implementations.web_search import DuckDuckGoSearchTool
+from .implementations.python_sandbox import LocalPythonSandbox
 try:
     from .mcp_client import MCPClient
 except ImportError:
@@ -38,6 +40,10 @@ class ToolRegistry:
         self._tools: Dict[str, MCPTool] = {}
         self._mcp_clients: List['MCPClient'] = []
         self._remote_tools_cache: Dict[str, RemoteMCPTool] = {}
+        
+        # Phase 6.5: Register Free Tools automatically
+        self.register(DuckDuckGoSearchTool())
+        self.register(LocalPythonSandbox())
 
     def register(self, tool: MCPTool):
         """Register a new local tool."""

@@ -56,6 +56,7 @@ class ChatOrchestrator:
         self.registry = registry
         self.conversation_repo = conversation_repo
         self.memory_repo = memory_repo
+        self.settings = get_settings()
         # Always use Ollama for embeddings (Hybrid Architecture)
         self.embedding_service = EmbeddingService(base_url=self.settings.ollama_base_url)
         self.agentic_engine = AgenticEngine(provider=provider, registry=registry)

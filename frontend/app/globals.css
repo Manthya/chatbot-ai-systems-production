@@ -1,109 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 229, 229, 229;
-  --background-start-rgb: 15, 15, 15;
-  --background-end-rgb: 15, 15, 15;
+  /* Voxa Palette */
+  --color-void: #040404;
+  --color-surface: #171717;
+  --color-accent: #2d8cff;
+  --color-white: #ffffff;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: var(--color-white);
+  background: var(--color-void);
   min-height: 100vh;
+  font-family: 'Space Grotesk', sans-serif;
+  overflow: hidden;
 }
 
-/* Custom scrollbar */
+/* Custom Utilities */
+.btn-voxa {
+  background-color: var(--color-accent);
+  color: white;
+  font-weight: 500;
+  border-radius: 9999px;
+  /* Pill shape */
+  transition: all 0.2s ease;
+}
+
+.btn-voxa:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 15px rgba(45, 140, 255, 0.4);
+}
+
+/* Scrollbar (Clean) */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
-  border-radius: 4px;
+  background: #333;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a4a4a;
-}
-
-/* Message content styling */
-.prose {
-  color: #e5e5e5;
-}
-
-.prose code {
-  background: #2a2a2a;
-  padding: 0.2em 0.4em;
-  border-radius: 4px;
-  font-size: 0.9em;
-}
-
-.prose pre {
-  background: #1a1a1a;
-  padding: 1rem;
-  border-radius: 8px;
-  overflow-x: auto;
-}
-
-.prose pre code {
-  background: transparent;
-  padding: 0;
-}
-
-/* Typing animation */
-.typing-indicator {
-  display: flex;
-  gap: 4px;
-  padding: 8px 12px;
-}
-
-.typing-indicator span {
-  width: 8px;
-  height: 8px;
-  background: #0ea5e9;
-  border-radius: 50%;
-  animation: bounce 1.4s infinite ease-in-out both;
-}
-
-.typing-indicator span:nth-child(1) {
-  animation-delay: -0.32s;
-}
-
-.typing-indicator span:nth-child(2) {
-  animation-delay: -0.16s;
-}
-
-@keyframes bounce {
-  0%, 80%, 100% {
-    transform: scale(0);
-  }
-  40% {
-    transform: scale(1);
-  }
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Glassmorphism card */
-.glass-card {
-  background: rgba(26, 26, 26, 0.8);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-accent);
 }
