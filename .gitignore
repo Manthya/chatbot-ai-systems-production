@@ -11,3 +11,16 @@ node_modules/
 .next/
 npm-debug.log
 yarn-error.log
+
+# Runtime Logs
+*.log
+
+# Test Artifacts
+.pytest_cache/
+data.db
+media/images/*
+media/audio/*
+media/video/*
+!media/images/.gitkeep
+!media/audio/.gitkeep
+!media/video/.gitkeep

@@ -6,8 +6,8 @@ Speech-to-Text using faster-whisper for real-time and batch transcription.
 
 import io
 import logging
-import tempfile
 import os
+import tempfile
 from typing import AsyncGenerator, Optional
 
 from chatbot_ai_system.config import get_settings
@@ -25,10 +25,7 @@ def _get_whisper_model():
         from faster_whisper import WhisperModel
 
         settings = get_settings()
-        logger.info(
-            f"Loading Whisper model: {settings.stt_model} "
-            f"on {settings.stt_device} (int8)"
-        )
+        logger.info(f"Loading Whisper model: {settings.stt_model} on {settings.stt_device} (int8)")
         _whisper_model = WhisperModel(
             settings.stt_model,
             device=settings.stt_device,
@@ -47,11 +44,11 @@ class STTEngine:
     async def transcribe(self, audio_bytes: bytes, language: Optional[str] = None) -> dict:
         """
         Transcribe audio bytes to text.
-        
+
         Args:
             audio_bytes: Raw audio data (WAV, MP3, etc.)
             language: Optional language code (e.g., "en", "ja")
-        
+
         Returns:
             dict with keys: text, language, language_probability, duration
         """
@@ -90,9 +87,9 @@ class STTEngine:
     ) -> AsyncGenerator[str, None]:
         """
         Stream transcription: accumulate audio chunks, transcribe on silence.
-        
+
         For real-time voice: VAD detects speech end, then this transcribes the segment.
-        
+
         Yields:
             Transcribed text segments
         """

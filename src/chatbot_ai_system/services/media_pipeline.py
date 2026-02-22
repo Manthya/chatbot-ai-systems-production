@@ -14,7 +14,7 @@ import logging
 import os
 import uuid
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from PIL import Image
 from pydub import AudioSegment
@@ -45,12 +45,10 @@ class MediaPipeline:
 
     # ─── Image Processing ───────────────────────────────────────────
 
-    async def process_image(
-        self, file_bytes: bytes, filename: str, mime_type: str
-    ) -> dict:
+    async def process_image(self, file_bytes: bytes, filename: str, mime_type: str) -> dict:
         """
         Process an image: validate, resize, encode to base64.
-        
+
         Returns:
             dict with keys: base64_data, width, height, file_path, file_size_bytes
         """
@@ -92,12 +90,10 @@ class MediaPipeline:
 
     # ─── Audio Processing ───────────────────────────────────────────
 
-    async def process_audio(
-        self, file_bytes: bytes, filename: str, mime_type: str
-    ) -> dict:
+    async def process_audio(self, file_bytes: bytes, filename: str, mime_type: str) -> dict:
         """
         Process audio: convert to WAV, get duration, run STT.
-        
+
         Returns:
             dict with keys: transcription, duration_seconds, file_path, file_size_bytes
         """
@@ -131,20 +127,18 @@ class MediaPipeline:
 
     # ─── Video Processing ───────────────────────────────────────────
 
-    async def process_video(
-        self, file_bytes: bytes, filename: str, mime_type: str
-    ) -> dict:
+    async def process_video(self, file_bytes: bytes, filename: str, mime_type: str) -> dict:
         """
         Process video: extract keyframes + transcribe audio track.
-        
+
         Returns:
-            dict with keys: keyframes (list of base64), transcription, 
+            dict with keys: keyframes (list of base64), transcription,
                            duration_seconds, file_path, file_size_bytes
         """
         try:
-            import cv2
-            import numpy as np
             import tempfile
+
+            import cv2
 
             # Save original file
             file_path = self._save_file(file_bytes, filename, "video")
@@ -220,6 +214,7 @@ class MediaPipeline:
     async def _transcribe_audio(self, wav_bytes: bytes) -> str:
         """Transcribe WAV audio using faster-whisper."""
         import tempfile
+
         from faster_whisper import WhisperModel
 
         settings = get_settings()
@@ -272,10 +267,9 @@ class MediaPipeline:
         """Validate file size and type. Returns file type or raises ValueError."""
         if len(file_bytes) > self.max_upload_bytes:
             raise ValueError(
-                f"File too large: {len(file_bytes)} bytes "
-                f"(max {self.max_upload_bytes} bytes)"
+                f"File too large: {len(file_bytes)} bytes (max {self.max_upload_bytes} bytes)"
             )
-        
+
         file_type = self.get_file_type(filename)
         if not file_type:
             ext = Path(filename).suffix

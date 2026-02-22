@@ -3,28 +3,29 @@ Voice & Upload Routes — Phase 5.0
 
 Provides:
 - POST /api/upload — Upload media files (images, audio, video)
-- POST /api/chat/multimodal — Chat with media attachments 
+- POST /api/chat/multimodal — Chat with media attachments
 - WebSocket /api/voice/stream — Real-time voice conversation
 """
 
-import base64
 import io
 import logging
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, WebSocket, WebSocketDisconnect, Depends
+from fastapi import (
+    APIRouter,
+    File,
+    HTTPException,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatbot_ai_system.config import get_settings
-from chatbot_ai_system.database.session import get_db
 from chatbot_ai_system.models.schemas import (
     ChatMessage,
-    ChatRequest,
-    MediaAttachment,
     MessageRole,
-    StreamChunk,
 )
 from chatbot_ai_system.services.media_pipeline import MediaPipeline
 from chatbot_ai_system.services.stt_engine import STTEngine
@@ -62,8 +63,10 @@ def get_tts_engine() -> TTSEngine:
 
 # ─── Response Models ────────────────────────────────────────────
 
+
 class UploadResponse(BaseModel):
     """Response from media upload."""
+
     id: str
     type: str  # "image", "audio", "video"
     filename: str
@@ -80,6 +83,7 @@ class UploadResponse(BaseModel):
 
 class VoiceConfig(BaseModel):
     """Voice chat configuration."""
+
     stt_available: bool
     tts_available: bool
     tts_backend: str
@@ -88,34 +92,35 @@ class VoiceConfig(BaseModel):
 
 # ─── Upload Endpoint ────────────────────────────────────────────
 
+
 @router.post("/api/upload", response_model=UploadResponse)
 async def upload_media(file: UploadFile = File(...)):
     """
     Upload a media file for processing.
-    
+
     Supports images (png, jpg, gif, webp), audio (wav, mp3, ogg, m4a, webm),
     and video (mp4, webm, mov).
-    
+
     For images: returns base64-encoded data ready for vision models.
     For audio: returns transcription from Whisper STT.
     For video: returns keyframes + audio transcription.
     """
     pipeline = get_media_pipeline()
-    
+
     # Read file
     file_bytes = await file.read()
     filename = file.filename or "upload"
     content_type = file.content_type or "application/octet-stream"
-    
+
     # Validate
     try:
         file_type = pipeline.validate_upload(file_bytes, filename)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
+
     # Process based on type
     upload_id = str(uuid.uuid4())
-    
+
     try:
         if file_type == "image":
             result = await pipeline.process_image(file_bytes, filename, content_type)
@@ -130,7 +135,7 @@ async def upload_media(file: UploadFile = File(...)):
                 width=result["width"],
                 height=result["height"],
             )
-        
+
         elif file_type == "audio":
             result = await pipeline.process_audio(file_bytes, filename, content_type)
             return UploadResponse(
@@ -143,7 +148,7 @@ async def upload_media(file: UploadFile = File(...)):
                 transcription=result["transcription"],
                 duration_seconds=result["duration_seconds"],
             )
-        
+
         elif file_type == "video":
             result = await pipeline.process_video(file_bytes, filename, content_type)
             return UploadResponse(
@@ -159,7 +164,7 @@ async def upload_media(file: UploadFile = File(...)):
                 height=result.get("height"),
                 keyframes=result.get("keyframes"),
             )
-    
+
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
@@ -168,6 +173,7 @@ async def upload_media(file: UploadFile = File(...)):
 
 
 # ─── Voice Config Endpoint ──────────────────────────────────────
+
 
 @router.get("/api/voice/config", response_model=VoiceConfig)
 async def voice_config():
@@ -184,15 +190,16 @@ async def voice_config():
 
 # ─── Voice WebSocket ────────────────────────────────────────────
 
+
 @router.websocket("/api/voice/stream")
 async def voice_stream(websocket: WebSocket):
     """
     Full-duplex voice conversation over WebSocket.
-    
+
     Protocol:
     - Client sends: Binary audio frames (16kHz, 16-bit PCM, mono)
-    - Client sends: JSON control messages {"type": "end_turn"} 
-    - Server sends: JSON {"type": "transcription", "text": "..."} 
+    - Client sends: JSON control messages {"type": "end_turn"}
+    - Server sends: JSON {"type": "transcription", "text": "..."}
     - Server sends: JSON {"type": "response_start"}
     - Server sends: JSON {"type": "response_text", "text": "..."}
     - Server sends: Binary audio response chunks (WAV)
@@ -215,6 +222,7 @@ async def voice_stream(websocket: WebSocket):
 
             elif "text" in data:
                 import json
+
                 msg = json.loads(data["text"])
 
                 if msg.get("type") == "end_turn":
@@ -231,17 +239,21 @@ async def voice_stream(websocket: WebSocket):
                         stt_result = await stt.transcribe(audio_bytes)
                         transcription = stt_result["text"]
 
-                        await websocket.send_json({
-                            "type": "transcription",
-                            "text": transcription,
-                            "language": stt_result["language"],
-                        })
+                        await websocket.send_json(
+                            {
+                                "type": "transcription",
+                                "text": transcription,
+                                "language": stt_result["language"],
+                            }
+                        )
                     except Exception as e:
                         logger.error(f"STT failed: {e}")
-                        await websocket.send_json({
-                            "type": "error",
-                            "message": f"Speech recognition failed: {str(e)}",
-                        })
+                        await websocket.send_json(
+                            {
+                                "type": "error",
+                                "message": f"Speech recognition failed: {str(e)}",
+                            }
+                        )
                         continue
 
                     if not transcription.strip():
@@ -250,7 +262,6 @@ async def voice_stream(websocket: WebSocket):
                     # Step 2: Get LLM response
                     # Import here to avoid circular deps
                     from chatbot_ai_system.server.routes import get_provider
-                    from chatbot_ai_system.tools import registry
 
                     provider = get_provider("ollama")
                     settings = get_settings()
@@ -281,10 +292,12 @@ async def voice_stream(websocket: WebSocket):
                         response_text = response.message.content
 
                         # Send text
-                        await websocket.send_json({
-                            "type": "response_text",
-                            "text": response_text,
-                        })
+                        await websocket.send_json(
+                            {
+                                "type": "response_text",
+                                "text": response_text,
+                            }
+                        )
 
                         # Step 3: TTS
                         if tts.is_available and response_text.strip():
@@ -304,10 +317,12 @@ async def voice_stream(websocket: WebSocket):
 
                     except Exception as e:
                         logger.error(f"LLM response failed: {e}")
-                        await websocket.send_json({
-                            "type": "error",
-                            "message": f"Response generation failed: {str(e)}",
-                        })
+                        await websocket.send_json(
+                            {
+                                "type": "error",
+                                "message": f"Response generation failed: {str(e)}",
+                            }
+                        )
 
                 elif msg.get("type") == "ping":
                     await websocket.send_json({"type": "pong"})

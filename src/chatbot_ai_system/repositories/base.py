@@ -1,10 +1,13 @@
-from typing import Generic, TypeVar, Type, List, Optional, Any
+from typing import Generic, List, Optional, Type, TypeVar
 from uuid import UUID
-from sqlalchemy import select, update, delete
+
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from chatbot_ai_system.database.models import Base
 
 T = TypeVar("T", bound=Base)
+
 
 class BaseRepository(Generic[T]):
     """Base repository with common CRUD operations."""
@@ -29,7 +32,7 @@ class BaseRepository(Generic[T]):
         """Create a new record."""
         instance = self.model_cls(**kwargs)
         self.session.add(instance)
-        await self.session.flush() # Flush to get ID, but don't commit yet
+        await self.session.flush()  # Flush to get ID, but don't commit yet
         await self.session.refresh(instance)
         return instance
 

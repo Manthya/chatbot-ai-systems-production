@@ -1,9 +1,12 @@
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from chatbot_ai_system.database.models import Conversation, Message, User
+
+from chatbot_ai_system.database.models import Conversation, Message
 from chatbot_ai_system.repositories.base import BaseRepository
+
 
 class ConversationRepository(BaseRepository[Conversation]):
     """Repository for Conversation-related operations."""
@@ -39,7 +42,7 @@ class ConversationRepository(BaseRepository[Conversation]):
         token_count_completion: Optional[int] = None,
         model: Optional[str] = None,
         latency_ms: Optional[int] = None,
-        finish_reason: Optional[str] = None
+        finish_reason: Optional[str] = None,
     ) -> Message:
         """Add a message to a conversation."""
         message = Message(
@@ -54,7 +57,7 @@ class ConversationRepository(BaseRepository[Conversation]):
             token_count_completion=token_count_completion,
             model=model,
             latency_ms=latency_ms,
-            finish_reason=finish_reason
+            finish_reason=finish_reason,
         )
         self.session.add(message)
         await self.session.flush()
@@ -112,11 +115,7 @@ class ConversationRepository(BaseRepository[Conversation]):
             await self.session.flush()
 
     async def search_similar_messages(
-        self,
-        user_id: UUID,
-        query_embedding: List[float],
-        limit: int = 5,
-        threshold: float = 0.7
+        self, user_id: UUID, query_embedding: List[float], limit: int = 5, threshold: float = 0.7
     ) -> List[Message]:
         """Perform semantic search across all of a user's conversations."""
         # Note: We join with Conversation to ensure we filter by the correct user_id
