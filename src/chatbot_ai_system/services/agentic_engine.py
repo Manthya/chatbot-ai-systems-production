@@ -8,10 +8,9 @@ Plan + ReAct hybrid for complex multi-step tasks.
 - Tool expansion: adds cross-category tools mid-loop if needed
 """
 
-import asyncio
 import logging
 import time
-from typing import List, Dict, Any, Optional, AsyncGenerator, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Tuple
 
 from chatbot_ai_system.models.schemas import (
     ChatMessage,
@@ -23,9 +22,9 @@ from chatbot_ai_system.models.schemas import (
 logger = logging.getLogger(__name__)
 
 # --- Configuration ---
-MAX_AGENT_ROUNDS = 8        # Safety cap on total tool rounds
-AGENT_TIMEOUT_SEC = 300      # Hard timeout for entire agentic flow
-MAX_TOOLS_AGENTIC = 8       # Tool count cap (slightly higher than one-shot's 5)
+MAX_AGENT_ROUNDS = 8  # Safety cap on total tool rounds
+AGENT_TIMEOUT_SEC = 300  # Hard timeout for entire agentic flow
+MAX_TOOLS_AGENTIC = 8  # Tool count cap (slightly higher than one-shot's 5)
 
 
 class AgenticEngine:
@@ -71,22 +70,28 @@ class AgenticEngine:
 
         # Dynamic Category Discovery
         all_categories = self.registry.get_categories()
-        
+
         # Build prompt description
         cat_desc = []
         for cat in all_categories:
             if cat == "GIT":
                 cat_desc.append("   GIT: Version control, commits, branches, diffs, blame.")
             elif cat == "FILESYSTEM":
-                cat_desc.append("   FILESYSTEM: Reading/writing files, listing directories, searching files.")
+                cat_desc.append(
+                    "   FILESYSTEM: Reading/writing files, listing directories, searching files."
+                )
             elif cat == "FETCH":
-                cat_desc.append("   FETCH: Web requests, URLs, downloading content from the internet.")
+                cat_desc.append(
+                    "   FETCH: Web search, web requests, URLs, researching topics online, finding information about something, downloading content from the internet."
+                )
             elif cat == "GENERAL":
-                cat_desc.append("   GENERAL: General knowledge, coding advice, greetings, math, explanations.")
+                cat_desc.append(
+                    "   GENERAL: General knowledge, coding advice, greetings, math, explanations."
+                )
             else:
                 # Fallback for dynamic MCP categories
                 cat_desc.append(f"   {cat}: Tools for {cat.lower()} operations.")
-        
+
         intent_section = "\n".join(cat_desc)
 
         classifier_prompt = (
@@ -125,34 +130,34 @@ class AgenticEngine:
         text = response.message.content.strip().upper()
 
         # Valid intents for Phase 5.5 (Dynamic)
-        valid_intents = set(all_categories) # Use the same list we generated for prompt
+        valid_intents = set(all_categories)  # Use the same list we generated for prompt
 
         # Parse intent
         intent = "GENERAL"
-        
+
         # Robust parsing: check each line against valid intents
         for line in text.splitlines():
             # Normalize: remove "INTENT:" prefix, strip, uppercase
             clean_line = line.replace("INTENT:", "").strip().upper()
-            
+
             # 1. Exact match
             if clean_line in valid_intents:
                 intent = clean_line
                 break
-            
+
             # 2. Substring match (e.g. "INTENT: GIT OPERATIONS")
             # Sort by length desc to match "FILESYSTEM" before "FILE"
             for valid in sorted(valid_intents, key=len, reverse=True):
                 if valid in clean_line:
                     intent = valid
                     break
-            
+
             if intent != "GENERAL":
                 break
 
         # Parse complexity
         complexity = "SIMPLE"  # Default to fast path
-        
+
         # Robust parsing: check for COMPLEX value specifically after the key
         # We iterate lines to find the line with COMPLEXITY
         for line in text.splitlines():
@@ -166,8 +171,7 @@ class AgenticEngine:
                     pass
 
         logger.info(
-            f"Phase 5.5 classifier: intent={intent}, complexity={complexity} "
-            f"(raw: {text!r})"
+            f"Phase 5.5 classifier: intent={intent}, complexity={complexity} (raw: {text!r})"
         )
         return (intent, complexity)
 
@@ -191,9 +195,7 @@ class AgenticEngine:
         tools_desc = ", ".join(tool_names) if tool_names else "none"
         context_note = ""
         if conversation_context:
-            context_note = (
-                f"\n\nRelevant conversation context:\n{conversation_context}\n"
-            )
+            context_note = f"\n\nRelevant conversation context:\n{conversation_context}\n"
 
         planner_prompt = (
             "You are a task planner. Break the user's request into a step-by-step plan.\n\n"
@@ -232,7 +234,7 @@ class AgenticEngine:
             if not line:
                 continue
             # Remove numbering: "1. Do X" → "Do X"
-            if len(line) > 2 and line[0].isdigit() and line[1] in ".)" :
+            if len(line) > 2 and line[0].isdigit() and line[1] in ".)":
                 line = line[2:].strip()
             elif len(line) > 3 and line[:2].isdigit() and line[2] in ".)":
                 line = line[3:].strip()
@@ -252,19 +254,17 @@ class AgenticEngine:
     # Tool Expansion
     # ------------------------------------------------------------------ #
 
-    async def get_expanded_tools(
-        self, intent: str, user_input: str
-    ) -> List[Dict[str, Any]]:
+    async def get_expanded_tools(self, intent: str, user_input: str) -> List[Dict[str, Any]]:
         """
         Get tools for agentic mode — dynamic and cross-category.
         """
         # 1. Tools for the main intent
         candidates = self.registry.get_tools_by_category(intent)
-        
+
         # 2. Cross-category tools if mentioned in query
         q = user_input.lower()
         all_cats = self.registry.get_categories()
-        
+
         for cat in all_cats:
             if cat == intent or cat == "GENERAL":
                 continue
@@ -272,8 +272,8 @@ class AgenticEngine:
             if cat.lower() in q:
                 cat_tools = self.registry.get_tools_by_category(cat)
                 candidates.extend(cat_tools)
-        
-        # 3. Always include GENERAL tools if they match keywords? 
+
+        # 3. Always include GENERAL tools if they match keywords?
         # Or just rely on the fallback below?
         # For now, let's mix in GENERAL tools if keywords match
         general_tools = self.registry.get_tools_by_category("GENERAL")
@@ -291,7 +291,7 @@ class AgenticEngine:
             if name not in seen:
                 unique_tools.append(t)
                 seen.add(name)
-        
+
         return unique_tools[:MAX_TOOLS_AGENTIC]
 
     def _needs_tool_expansion(
@@ -303,34 +303,36 @@ class AgenticEngine:
         """
         text = reasoning_text.lower()
         all_cats = self.registry.get_categories()
-        
+
         # Get set of categories currently present
         current_cats = set()
         # This is tricky because tools don't carry their category in the schema dict explicitly
         # But we can infer it or just check if *any* tool from a cat is present?
         # Simpler: check if we should add a category that isn't represented.
-        
+
         # But wait, checking if a category is "represented" requires knowing which tool maps to which cat.
         # We can do a reverse lookup or just simply:
         # If "fetch" is in text, and we expect "FETCH" tools (e.g. fetch_html), are they there?
-        
+
         current_names = {t["function"]["name"] for t in current_tools}
-        
+
         for cat in all_cats:
-            if cat == "GENERAL": continue
-            
+            if cat == "GENERAL":
+                continue
+
             # Use category name as keyword (e.g. "git", "filesystem", "fetch")
             # This relies on the convention that MCP names are descriptive
             if cat.lower() in text:
                 # Check if we have any tools from this category
                 cat_tools = self.registry.get_tools_by_category(cat)
-                if not cat_tools: continue 
-                
+                if not cat_tools:
+                    continue
+
                 # If valid tools exist for this cat, check if we have at least one
                 cat_tool_names = {t["function"]["name"] for t in cat_tools}
                 if not any(name in current_names for name in cat_tool_names):
                     return True
-                    
+
         return False
 
     async def _expand_tools_midloop(
@@ -341,10 +343,11 @@ class AgenticEngine:
         all_cats = self.registry.get_categories()
         current_names = {t["function"]["name"] for t in current_tools}
         expanded = list(current_tools)
-        
+
         for cat in all_cats:
-            if cat == "GENERAL": continue
-            
+            if cat == "GENERAL":
+                continue
+
             if cat.lower() in text:
                 cat_tools = self.registry.get_tools_by_category(cat)
                 for tool in cat_tools:
@@ -356,10 +359,8 @@ class AgenticEngine:
                             break
             if len(expanded) >= MAX_TOOLS_AGENTIC:
                 break
-                
-        logger.info(
-            f"Phase 5.5 tool expansion: {len(current_tools)} → {len(expanded)} tools"
-        )
+
+        logger.info(f"Phase 5.5 tool expansion: {len(current_tools)} → {len(expanded)} tools")
         return expanded[:MAX_TOOLS_AGENTIC]
 
     # ------------------------------------------------------------------ #
@@ -387,7 +388,7 @@ class AgenticEngine:
         all_tool_calls = []  # Track for persistence
 
         # Stream the plan to user
-        plan_text = "\n".join(f"{i+1}. {s}" for i, s in enumerate(plan))
+        plan_text = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(plan))
         yield StreamChunk(
             content="",
             status=f"📋 Plan ({total_steps} steps):\n{plan_text}",
@@ -405,9 +406,7 @@ class AgenticEngine:
                 content=original_system + "\n\n" + agentic_prompt,
             )
         else:
-            messages.insert(
-                0, ChatMessage(role=MessageRole.SYSTEM, content=agentic_prompt)
-            )
+            messages.insert(0, ChatMessage(role=MessageRole.SYSTEM, content=agentic_prompt))
 
         # Add a guidance message to start execution
         guidance = ChatMessage(
@@ -428,9 +427,7 @@ class AgenticEngine:
             # Timeout check
             elapsed = time.time() - start_time
             if elapsed > AGENT_TIMEOUT_SEC:
-                logger.warning(
-                    f"Phase 5.5: Timeout after {elapsed:.1f}s, {round_num} rounds"
-                )
+                logger.warning(f"Phase 5.5: Timeout after {elapsed:.1f}s, {round_num} rounds")
                 yield StreamChunk(
                     content="",
                     status="⏱️ Timeout reached — generating best answer with available info...",
@@ -461,6 +458,7 @@ class AgenticEngine:
                 parsed = self.provider._try_parse_tool_calls(full_content)
                 if parsed:
                     current_tool_calls = parsed
+                    full_content = ""  # Clear raw JSON
 
             # --- No tool calls = LLM produced final answer ---
             if not current_tool_calls:
@@ -590,13 +588,11 @@ class AgenticEngine:
     # Agentic System Prompt
     # ------------------------------------------------------------------ #
 
-    def _get_agentic_system_prompt(
-        self, plan: List[str], tools: List[Dict[str, Any]]
-    ) -> str:
+    def _get_agentic_system_prompt(self, plan: List[str], tools: List[Dict[str, Any]]) -> str:
         """Build the agentic system prompt with plan and tool discipline."""
         tool_names = [t["function"]["name"] for t in tools]
         tools_list = ", ".join(tool_names) if tool_names else "none"
-        plan_text = "\n".join(f"  {i+1}. {s}" for i, s in enumerate(plan))
+        plan_text = "\n".join(f"  {i + 1}. {s}" for i, s in enumerate(plan))
 
         return (
             "--- AGENTIC MODE (Phase 5.5) ---\n"
@@ -609,5 +605,6 @@ class AgenticEngine:
             "4. If a step reveals unexpected information, adapt your approach.\n"
             "5. When you have enough information to answer, respond with text (no tool call).\n"
             "6. Keep each tool call focused — prefer one call per step.\n"
-            f"7. Maximum {MAX_AGENT_ROUNDS} rounds allowed.\n"
+            "7. If a step involves writing code or calculating, you MUST use the 'run_python_script' tool if available rather than simulating it.\n"
+            f"8. Maximum {MAX_AGENT_ROUNDS} rounds allowed.\n"
         )

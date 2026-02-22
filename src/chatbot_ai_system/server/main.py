@@ -10,8 +10,8 @@ from chatbot_ai_system import __version__
 from chatbot_ai_system.config import get_settings
 from chatbot_ai_system.database.redis import redis_client
 
-from .routes import router
 from .multimodal_routes import router as multimodal_router
+from .routes import router
 
 # Configure logging
 logging.basicConfig(
@@ -54,39 +54,46 @@ def create_app() -> FastAPI:
         logger.info(f"Starting Chatbot AI System v{__version__}")
         logger.info(f"Debug mode: {settings.debug}")
         logger.info(f"Default LLM provider: {settings.default_llm_provider}")
-        
+
         # Initialize Redis
         await redis_client.connect(settings.redis_url)
-        
+
         # Initialize and register MCP clients
-        from chatbot_ai_system.tools.mcp_client import MCPClient
-        from chatbot_ai_system.tools import registry
-        from chatbot_ai_system.config.mcp_server_config import get_mcp_servers
         import os
-        
+
+        from chatbot_ai_system.config.mcp_server_config import get_mcp_servers
+        from chatbot_ai_system.tools import registry
+        from chatbot_ai_system.tools.mcp_client import MCPClient
+
         # Load MCP servers from configuration
         servers = get_mcp_servers()
         logger.info(f"Loading {len(servers)} MCP servers...")
-        
+
         for server_config in servers:
             try:
                 # Check for required env vars again (safety check)
-                missing_vars = [var for var in server_config.required_env_vars if not server_config.env_vars.get(var) and not os.environ.get(var)]
+                missing_vars = [
+                    var
+                    for var in server_config.required_env_vars
+                    if not server_config.env_vars.get(var) and not os.environ.get(var)
+                ]
                 if missing_vars:
-                    logger.warning(f"Skipping MCP server {server_config.name}: Missing required environment variables: {', '.join(missing_vars)}")
+                    logger.warning(
+                        f"Skipping MCP server {server_config.name}: Missing required environment variables: {', '.join(missing_vars)}"
+                    )
                     continue
 
                 client = MCPClient(
                     name=server_config.name,
                     command=server_config.command,
                     args=server_config.args,
-                    env=server_config.env_vars or os.environ.copy()
+                    env=server_config.env_vars or os.environ.copy(),
                 )
                 registry.register_mcp_client(client)
                 logger.info(f"Registered MCP server: {server_config.name}")
             except Exception as e:
                 logger.error(f"Failed to register MCP server {server_config.name}: {e}")
-        
+
         # Refresh tools
         try:
             await registry.refresh_remote_tools()
@@ -97,20 +104,20 @@ def create_app() -> FastAPI:
     @app.on_event("shutdown")
     async def shutdown_event():
         logger.info("Shutting down Chatbot AI System")
-        
-        # Cleanup MCP clients 
-        # (The registry or clients should ideally handle this, but for now we rely on process termination 
+
+        # Cleanup MCP clients
+        # (The registry or clients should ideally handle this, but for now we rely on process termination
         # or we could add a cleanup method to registry)
-        from chatbot_ai_system.tools import registry
         # We might want to explicitly close them if we had a reference, but they are in the registry's list.
         # Ideally, we'd add a close_all method to registry.
-        
+
         # Cleanup providers
         from .routes import _providers
+
         for provider in _providers.values():
             if hasattr(provider, "close"):
                 await provider.close()
-                
+
         # Close Redis
         await redis_client.close()
 

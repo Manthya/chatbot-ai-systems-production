@@ -1,15 +1,18 @@
-import logging
-import redis.asyncio as redis
-from typing import Optional, Any
 import json
+import logging
+from typing import Any, Optional
+
+import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
+
 
 class RedisClient:
     """
     Async Redis client for caching.
     """
-    _instance: Optional['RedisClient'] = None
+
+    _instance: Optional["RedisClient"] = None
     _redis: Optional[redis.Redis] = None
 
     def __new__(cls):
@@ -71,6 +74,7 @@ class RedisClient:
             await self._redis.close()
             self._redis = None
             logger.info("Redis connection closed.")
+
 
 # Global instance
 redis_client = RedisClient()

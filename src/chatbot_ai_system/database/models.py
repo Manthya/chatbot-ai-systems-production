@@ -1,13 +1,16 @@
-from datetime import datetime
 import uuid
-from typing import Optional, List, Any
-from sqlalchemy import String, DateTime, Text, ForeignKey, Integer, Float, JSON
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import datetime
+from typing import Any, List, Optional
+
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
 
 class Base(DeclarativeBase):
     pass
+
 
 class User(Base):
     __tablename__ = "users"
@@ -21,6 +24,7 @@ class User(Base):
     conversations: Mapped[List["Conversation"]] = relationship(back_populates="user")
     memories: Mapped[List["Memory"]] = relationship(back_populates="user")
 
+
 class Conversation(Base):
     __tablename__ = "conversations"
 
@@ -29,14 +33,19 @@ class Conversation(Base):
     title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     is_archived: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
-    
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True
+    )
+
     # Layer 2 Memory: Summarization (Phase 2.7)
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     last_summarized_seq_id: Mapped[int] = mapped_column(Integer, default=0)
 
     user: Mapped["User"] = relationship(back_populates="conversations")
-    messages: Mapped[List["Message"]] = relationship(back_populates="conversation", order_by="Message.sequence_number")
+    messages: Mapped[List["Message"]] = relationship(
+        back_populates="conversation", order_by="Message.sequence_number"
+    )
+
 
 class Message(Base):
     __tablename__ = "messages"
@@ -45,16 +54,16 @@ class Message(Base):
     conversation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("conversations.id"), index=True)
     role: Mapped[str] = mapped_column(String)  # user, assistant, system, tool
     content: Mapped[str] = mapped_column(Text)
-    
+
     # Store tool calls as JSONB list: [{"name": "...", "arguments": {...}}]
     tool_calls: Mapped[Optional[List[Any]]] = mapped_column(JSONB, nullable=True)
-    
+
     # For tool results, link back to the call
     tool_call_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    
+
     # Metadata (tokens, latency, model_name)
     metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=True)
-    
+
     # Observability Metrics (Phase 2.5)
     token_count_prompt: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     token_count_completion: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -70,10 +79,14 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     conversation: Mapped["Conversation"] = relationship(back_populates="messages")
-    attachments: Mapped[List["MediaAttachment"]] = relationship(back_populates="message", cascade="all, delete-orphan")
+    attachments: Mapped[List["MediaAttachment"]] = relationship(
+        back_populates="message", cascade="all, delete-orphan"
+    )
+
 
 class MediaAttachment(Base):
     """Phase 5.0: Media files attached to messages."""
+
     __tablename__ = "media_attachments"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

@@ -1,8 +1,11 @@
 from typing import List
 from uuid import UUID
+
 from sqlalchemy import select
+
 from chatbot_ai_system.database.models import Memory
 from chatbot_ai_system.repositories.base import BaseRepository
+
 
 class MemoryRepository(BaseRepository[Memory]):
     """Repository for user Long-Term Memory."""

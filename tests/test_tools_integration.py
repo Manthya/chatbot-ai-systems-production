@@ -13,25 +13,33 @@ class TestToolIntegration(unittest.TestCase):
         mock_provider = AsyncMock()
         mock_get_provider.return_value = mock_provider
         
-        # Tool call response (Step 1)
-        tool_call_msg = MagicMock()
-        tool_call_msg.content = ""
-        # Mock tool call structure
-        tc = MagicMock()
-        tc.function.name = "get_current_time"
-        tc.function.arguments = {}
-        tool_call_msg.tool_calls = [tc]
+        from chatbot_ai_system.models.schemas import ToolCall, ToolCallFunction
+        # Define async generators for the stream responses
+        async def stream_1(*args, **kwargs):
+            tc = ToolCall(
+                id="call_123",
+                type="function",
+                function=ToolCallFunction(name="get_current_time", arguments={})
+            )
+            chunk = MagicMock(content="", tool_calls=[tc], done=True)
+            yield chunk
+
+        async def stream_2(*args, **kwargs):
+            chunk = MagicMock(content="It is 2026-02-10T14:00:00", tool_calls=None, done=True)
+            yield chunk
+
+        # Set side effects for stream using a regular MagicMock
+        mock_provider.stream = MagicMock(side_effect=[stream_1(), stream_2()])
         
-        # Final response (Step 2)
-        final_msg = MagicMock()
-        final_msg.content = "It is 2026-02-10T14:00:00"
-        final_msg.tool_calls = None
+        # Mock complete for intent classification (FETCH intent)
+        intent_response = MagicMock()
+        intent_response.message.content = "FETCH\nCOMPLEXITY: 1"
         
-        # Set side effects
-        mock_provider.complete.side_effect = [
-            MagicMock(message=tool_call_msg),
-            MagicMock(message=final_msg)
-        ]
+        # Make the complete() return a coroutine that resolves to intent_response
+        async def mock_complete(*args, **kwargs):
+            return intent_response
+            
+        mock_provider.complete.side_effect = mock_complete
         
         # Make request
         response = self.client.post(
@@ -44,25 +52,23 @@ class TestToolIntegration(unittest.TestCase):
         
         # Assertions
         self.assertEqual(response.status_code, 200)
-        data = response.json()
+        
+        # The response is expected to be a Server-Sent Events stream containing JSON data blocks.
+        # But wait, self.client.post returns the full composed response from FastAPI StreamingResponse.
+        # The content will be a stream of SSE "data: {...}\n\n". 
+        text_response = response.text
         
         # Verify provider called twice
-        self.assertEqual(mock_provider.complete.call_count, 2)
+        self.assertEqual(mock_provider.stream.call_count, 2)
         
-        # Verify final response content
-        self.assertEqual(data["message"]["content"], "It is 2026-02-10T14:00:00")
+        # Verify final response content is in the stream
+        self.assertIn("It is 2026-02-10T14:00:00", text_response)
         
-        # Verify tool was executed (we can infer from the flow, or check if 'tool' role message was passed in 2nd call)
-        call_args_list = mock_provider.complete.call_args_list
+        # Verify tool was executed
+        call_args_list = mock_provider.stream.call_args_list
         second_call_args = call_args_list[1]
         messages_sent = second_call_args.kwargs['messages']
         
-        # Should have: User, Assistant (ToolCall), Tool (Result)
-        # So length should be 3 (plus history if any, but we started fresh)
-        # Wait, routes.py appends to _conversations globally.
-        # But we use unique conversation_id for each request usually if not provided?
-        # Actually conversation_id is optional in request.
-        # Let's check conversation history length passed to second call.
         self.assertTrue(len(messages_sent) >= 3)
         self.assertEqual(messages_sent[-1].role, "tool")
 

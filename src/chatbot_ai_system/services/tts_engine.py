@@ -5,12 +5,11 @@ Text-to-Speech for voice conversation responses.
 Uses subprocess-based synthesis (piper-tts or system TTS as fallback).
 """
 
-import io
 import logging
-import subprocess
-import tempfile
 import os
 import shutil
+import subprocess
+import tempfile
 from typing import AsyncGenerator, Optional
 
 from chatbot_ai_system.config import get_settings
@@ -32,26 +31,26 @@ class TTSEngine:
         # Check for piper-tts
         if shutil.which("piper"):
             return "piper"
-        
+
         # Check for macOS say command
         if shutil.which("say"):
             return "macos_say"
-        
+
         # Check for espeak
         if shutil.which("espeak-ng") or shutil.which("espeak"):
             return "espeak"
-        
+
         logger.warning("No TTS backend found. Voice output will be unavailable.")
         return "none"
 
     async def synthesize(self, text: str, voice: Optional[str] = None) -> bytes:
         """
         Convert text to audio bytes (WAV format).
-        
+
         Args:
             text: Text to synthesize
             voice: Optional voice override
-        
+
         Returns:
             WAV audio bytes
         """
@@ -85,7 +84,7 @@ class TTSEngine:
             if proc.returncode != 0:
                 logger.error(f"Piper TTS failed: {proc.stderr.decode()}")
                 return b""
-            
+
             with open(tmp_path, "rb") as f:
                 return f.read()
         finally:
@@ -163,7 +162,7 @@ class TTSEngine:
 
         async for chunk in text_chunks:
             buffer += chunk
-            
+
             # Check for sentence boundary
             if buffer and buffer[-1] in sentence_endings and len(buffer) > 10:
                 audio = await self.synthesize(buffer.strip())

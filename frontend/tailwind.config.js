@@ -9,37 +9,46 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                primary: {
-                    50: '#f0f9ff',
-                    100: '#e0f2fe',
-                    200: '#bae6fd',
-                    300: '#7dd3fc',
-                    400: '#38bdf8',
-                    500: '#0ea5e9',
-                    600: '#0284c7',
-                    700: '#0369a1',
-                    800: '#075985',
-                    900: '#0c4a6e',
+                brand: {
+                    void: '#040404',   // Main Background
+                    surface: '#171717', // Cards / Sidebar
+                    accent: '#2d8cff',  // Electric Blue
+                    lighter: '#6ec0ff', // Light Blue
+                    white: '#ffffff',
+                    grey: '#888888',
                 },
-                dark: {
-                    bg: '#0f0f0f',
-                    surface: '#1a1a1a',
-                    border: '#2a2a2a',
-                    text: '#e5e5e5',
-                    muted: '#a3a3a3',
+                // Mappings
+                primary: {
+                    DEFAULT: '#2d8cff',
+                    foreground: '#ffffff',
+                },
+                secondary: {
+                    DEFAULT: '#171717',
+                    foreground: '#ffffff',
+                },
+                accent: {
+                    DEFAULT: '#6ec0ff',
+                    foreground: '#000000',
+                },
+                sidebar: {
+                    bg: '#171717',
+                    fg: '#ffffff',
+                    border: '#333333',
+                    active: '#2d8cff',
                 }
             },
-            animation: {
-                'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                'typing': 'typing 1s ease-in-out infinite',
+            fontFamily: {
+                sans: ['"Space Grotesk"', 'sans-serif'],
+                mono: ['monospace'],
             },
-            keyframes: {
-                typing: {
-                    '0%, 100%': { opacity: 1 },
-                    '50%': { opacity: 0.5 },
-                }
-            }
+            boxShadow: {
+                'soft': '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
+                'glow': '0 0 20px rgba(45, 140, 255, 0.3)',
+                'sharp': 'none',
+            },
         },
     },
-    plugins: [],
+    plugins: [
+        require('@tailwindcss/typography'), // Ensure typography plugin is used if installed, otherwise remove
+    ],
 }
